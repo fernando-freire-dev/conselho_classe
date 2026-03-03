@@ -1,0 +1,45 @@
+:root{
+  --app-primary:#0d6efd;
+  --app-primary-dark:#0b5ed7;
+  --app-bg:#f6f8fb;
+  --app-card:#ffffff;
+  --app-text:#0f172a;
+  --app-muted:#64748b;
+  --app-border:#e5e7eb;
+}
+
+body.app-body{
+  background: var(--app-bg);
+  color: var(--app-text);
+}
+
+.app-navbar{
+  background: linear-gradient(90deg, var(--app-primary-dark), var(--app-primary));
+  box-shadow: 0 8px 18px rgba(2, 6, 23, 0.18);
+}
+
+.brand-school{font-weight:700;font-size:.9rem;letter-spacing:.2px;}
+.brand-system{font-weight:600;font-size:.8rem;opacity:.9;}
+
+.app-page-title{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin:18px 0 14px;
+}
+.app-page-title h2{margin:0;font-weight:700;}
+
+.app-card{
+  background: var(--app-card);
+  border:1px solid var(--app-border);
+  border-radius:16px;
+  box-shadow: 0 10px 24px rgba(2, 6, 23, 0.06);
+}
+
+.table thead th{white-space:nowrap;}
+
+/* Navbar mais enxuta e alinhada */
+.app-navbar .navbar-brand { padding-top: .2rem; padding-bottom: .2rem; }
+.app-navbar .nav-link { padding-top: .65rem; padding-bottom: .65rem; }
+.app-navbar .navbar-text { margin: 0; }
