@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard Coordenação</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="css/styles.css" rel="stylesheet">
+</head>
+
+<body class="app-body">
+<nav class="navbar navbar-expand-lg navbar-dark app-navbar sticky-top">
+  <div class="container-fluid">
+    <a class="navbar-brand d-flex flex-column lh-1" href="dashboard.html">
+      <span class="brand-school">PEI Manoel Ignácio da Silva</span>
+      <span class="brand-system">Conselho de Classe</span>
+    </a>
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#appNavbar"
+      aria-controls="appNavbar" aria-expanded="false" aria-label="Alternar navegação">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="appNavbar">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item"><a class="nav-link" href="dashboard.html">Dashboard</a></li>
+
+        <!--
+		<li class="nav-item" data-role="professor,coordenacao">
+          <a class="nav-link" href="lancamento-notas.html">Lançar Notas</a>
+        </li>
+		-->
+
+        <li class="nav-item" data-role="professor,coordenacao">
+          <a class="nav-link" href="conselho.html">Conselho</a>
+        </li>
+
+        <!--
+		<li class="nav-item" data-role="coordenacao">
+          <a class="nav-link" href="dashboard-coordenacao.html">Coordenação</a>
+        </li>
+		-->
+
+        <li class="nav-item" data-role="professor">
+          <a class="nav-link" href="dashboard-professor.html">Professor</a>
+        </li>
+
+        <li class="nav-item" data-role="admin">
+          <a class="nav-link" href="admin.html">Admin</a>
+        </li>
+      </ul>
+
+      <div class="d-flex align-items-center gap-2">
+        <span class="navbar-text small d-none d-md-inline" id="navUserLabel"></span>
+        <button class="btn btn-outline-light btn-sm" id="btnLogout" type="button">Sair</button>
+      </div>
+    </div>
+  </div>
+</nav>
+<main class="container-fluid py-4">
+  <div class="app-page-title"><h2>Dashboard da Coordenação</h2></div>
+  <div class="app-card p-4">
+<div class="card p-4 mb-4">
+    <h4 class="mb-3">Filtros</h4>
+
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label">Ensino</label>
+        <select id="filtroEnsino" class="form-select" onchange="onEnsinoChange()">
+          <option value="">Todos</option>
+          <option value="fundamental">Fundamental</option>
+          <option value="medio">Médio</option>
+        </select>
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label">Turma</label>
+        <select id="filtroTurma" class="form-select" onchange="loadConselhos()">
+          <option value="">Todas</option>
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label">Bimestre</label>
+        <select id="filtroBimestre" class="form-select" onchange="loadConselhos()">
+          <option value="">Todos</option>
+          <option value="1">1º</option>
+          <option value="2">2º</option>
+          <option value="3">3º</option>
+          <option value="4">4º</option>
+        </select>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">Status</label>
+        <select id="filtroStatus" class="form-select" onchange="loadConselhos()">
+          <option value="">Todos</option>
+          <option value="em_andamento">Em andamento</option>
+          <option value="finalizado">Finalizado</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card p-4">
+    <div class="table-responsive mt-3">
+      <table class="table table-bordered align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Turma</th>
+            <th>Ensino</th>
+            <th>Bimestre</th>
+            <th>Data</th>
+            <th>Status</th>
+            <th style="width: 280px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="listaConselhos"></tbody>
+      </table>
+	  <div class="col-md-3 d-flex align-items-end">
+			<button class="btn btn-success w-100" onclick="iniciarConselho()">
+				Iniciar Conselho
+			</button>
+		</div>
+    </div>
+  </div>
+
+
+</div>
+</main>
+
+  <!-- Bootstrap JS (necessário para dropdown/navbar/modal etc.) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <!-- jsPDF + AutoTable (necessários para gerar PDF) -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.5.31/dist/jspdf.plugin.autotable.min.js"></script>
+  
+  <!-- Supabase + seus scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/dashboard-coordenacao.js"></script>
+
+</body>
+</html>
