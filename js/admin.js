@@ -105,7 +105,7 @@ async function loadTurmas() {
   const { data, error } = await supabaseClient
     .from("turmas")
     .select("*")
-	.order("nome", { ascending: true });
+    .order("nome", { ascending: true });
 
   if (error) {
     console.log(error);
@@ -137,7 +137,7 @@ async function deleteTurma(id) {
     .from("turmas")
     .delete()
     .eq("id", id)
-    .select("id"); // <- força retorno do que foi deletado
+    .select("id");
 
   if (error) {
     alert("Erro ao excluir turma");
@@ -145,7 +145,6 @@ async function deleteTurma(id) {
     return;
   }
 
-  // Se não veio nada, não deletou (RLS ou filtro não bateu)
   if (!data || data.length === 0) {
     alert("Não foi possível excluir (sem permissão/RLS). Confirme as policies do Supabase.");
     return;
@@ -184,7 +183,7 @@ async function loadTurmasSelect() {
   const { data, error } = await supabaseClient
     .from("turmas")
     .select("id, nome, ano")
-	.order("nome", { ascending: true });
+    .order("nome", { ascending: true });
 
   if (error) {
     console.log(error);
@@ -205,7 +204,6 @@ async function loadTurmasSelect() {
 
 //Função para vincular professor e turma
 async function vincularProfessor() {
-
   const professor_id = document.getElementById("select_professor").value;
   const turma_id = document.getElementById("select_turma").value;
 
@@ -225,9 +223,9 @@ async function vincularProfessor() {
     loadVinculos();
   }
 }
- //Listar vínculos atuais com botão de edição que abre o modal
-async function loadVinculos() {
 
+//Listar vínculos atuais com botão de edição que abre o modal
+async function loadVinculos() {
   const { data, error } = await supabaseClient
     .from("professor_turma")
     .select(`
@@ -247,7 +245,6 @@ async function loadVinculos() {
   container.innerHTML = "";
 
   data.forEach(v => {
-    // Criar objeto do vínculo para passar para o modal
     const vinculo = {
       id: v.id,
       professor_id: v.professor_id,
@@ -271,7 +268,6 @@ async function loadVinculos() {
 
 //Função para editar o trocar o professor representante da sala
 async function editarVinculo(vinculo_id, professorAtualId) {
-
   const novoProfessor = document.getElementById("select_professor").value;
 
   if (!novoProfessor) {
@@ -307,11 +303,10 @@ async function editarVinculo(vinculo_id, professorAtualId) {
 
 let vinculoEditando = null;
 let professorAtualId = null;
+let professoresDisponiveis = [];
 
 //Função para abrir o modal de alteração do vinculo
-
 async function abrirModalEditar(vinculo) {
-
   vinculoEditando = vinculo.id;
   professorAtualId = vinculo.professor_id;
 
@@ -321,7 +316,6 @@ async function abrirModalEditar(vinculo) {
   const select = document.getElementById("modalSelectProfessor");
   select.innerHTML = "";
 
-  // carregar professores disponíveis
   const { data } = await supabaseClient
     .from("profiles")
     .select("id, nome")
@@ -339,7 +333,6 @@ async function abrirModalEditar(vinculo) {
 
 //Função Salvar mudança de vinculo
 async function salvarEdicao() {
-
   const novoProfessor = document.getElementById("modalSelectProfessor").value;
 
   if (novoProfessor === professorAtualId) {
@@ -364,17 +357,18 @@ async function salvarEdicao() {
     loadVinculos();
   }
 }
+
 function fecharModal() {
   document.getElementById("modalEditar").style.display = "none";
 }
 
 //Mostrar as seções da página admin
 function mostrarSecao(secao) {
-  const secoes = ['perfil', 'turma', 'vinculo', 'vinculo-academico'];
+  const secoes = ["perfil", "turma", "vinculo", "vinculo-academico"];
 
   secoes.forEach(s => {
-    const div = document.getElementById('secao-' + s);
-    div.style.display = (s === secao) ? 'block' : 'none';
+    const div = document.getElementById("secao-" + s);
+    div.style.display = (s === secao) ? "block" : "none";
   });
 }
 
@@ -402,54 +396,146 @@ async function loadDisciplinasSelect() {
 }
 
 // Carregar professores e turmas para a nova seção
-/*async function loadSelectsAcademico() {
-
+async function loadSelectsAcademico() {
   const { data: professores } = await supabaseClient
     .from("profiles")
     .select("id, nome")
     .eq("role", "professor");
 
   const profSelect = document.getElementById("select_professor_academico");
-	profSelect.innerHTML = `<option value="">Selecione...</option>`;
+  profSelect.innerHTML = `<option value="">Selecione...</option>`;
 
-	professores.forEach(prof => {
-	  profSelect.innerHTML += `
-		<option value="${prof.id}">
-		  ${prof.nome}
-		</option>
-	  `;
-	});
+  professores.forEach(prof => {
+    profSelect.innerHTML += `
+      <option value="${prof.id}">
+        ${prof.nome}
+      </option>
+    `;
+  });
 
   const { data: turmas } = await supabaseClient
     .from("turmas")
     .select("id, nome, ano")
-	.order("nome", { ascending: true });
+    .order("nome", { ascending: true });
 
   const turmaSelect = document.getElementById("select_turma_academico");
-	turmaSelect.innerHTML = `<option value="">Selecione a turma</option>`;
+  turmaSelect.innerHTML = `<option value="">Selecione a turma</option>`;
 
-	turmas.forEach(t => {
-	  turmaSelect.innerHTML += `
-		<option value="${t.id}">
-		  ${t.nome} - ${t.ano}
-		</option>
-	  `;
-	});
-	
-	const discSelect = document.getElementById("select_disciplina_academico");
-	discSelect.innerHTML = `<option value="">Selecione a turma</option>`;
-	discSelect.value = "";
+  turmas.forEach(t => {
+    turmaSelect.innerHTML += `
+      <option value="${t.id}">
+        ${t.nome} - ${t.ano}
+      </option>
+    `;
+  });
 
-  //await loadDisciplinasSelect();
-}*/
+  const discSelect = document.getElementById("select_disciplina_academico");
+  discSelect.innerHTML = `<option value="">Selecione a turma</option>`;
+  discSelect.value = "";
+}
 
+//Função para vincular professor/disciplina/turma
+async function vincularAcademico() {
+  const professor_id = document.getElementById("select_professor_academico").value;
+  const turma_id = document.getElementById("select_turma_academico").value;
+  const disciplina_id = document.getElementById("select_disciplina_academico").value;
+
+  const { data: existente } = await supabaseClient
+    .from("professor_disciplina_turma")
+    .select("id, professor_id")
+    .eq("turma_id", turma_id)
+    .eq("disciplina_id", disciplina_id)
+    .maybeSingle();
+
+  if (existente) {
+    alert("Já existe professor nessa disciplina/turma. Exclua o vínculo atual para trocar.");
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from("professor_disciplina_turma")
+    .insert([{ professor_id, turma_id, disciplina_id }]);
+
+  if (error) {
+    if (error.code === "23505") {
+      alert("Essa disciplina já tem professor vinculado nessa turma. Exclua o vínculo atual para trocar.");
+    } else {
+      alert("Erro ao vincular.");
+    }
+    console.log(error);
+  } else {
+    alert("Vínculo criado com sucesso!");
+    loadVinculosAcademicos();
+  }
+}
+
+//Carregar nomes de professores para o campo de busca
+async function carregarProfessoresParaFiltro() {
+  const { data, error } = await supabaseClient
+    .from("profiles")
+    .select("nome")
+    .eq("role", "professor")
+    .order("nome", { ascending: true });
+
+  if (error) {
+    console.log("Erro ao carregar professores:", error);
+    return;
+  }
+
+  professoresDisponiveis = [...new Set((data || []).map(p => p.nome).filter(Boolean))];
+}
+
+//Lista sugestões enquanto digita
+function filtrarSugestoesProfessor() {
+  const input = document.getElementById("filtro_professor_vinculo");
+  const lista = document.getElementById("lista_sugestoes_professor");
+  const msgNaoEncontrado = document.getElementById("msg_professor_nao_encontrado");
+
+  if (!input || !lista || !msgNaoEncontrado) return;
+
+  const termo = input.value.trim().toLowerCase();
+
+  lista.innerHTML = "";
+  msgNaoEncontrado.classList.add("d-none");
+
+  if (!termo) {
+    loadVinculosAcademicos();
+    return;
+  }
+
+  const correspondencias = professoresDisponiveis.filter(nome =>
+    nome.toLowerCase().includes(termo)
+  );
+
+  if (correspondencias.length === 0) {
+    msgNaoEncontrado.classList.remove("d-none");
+    loadVinculosAcademicos();
+    return;
+  }
+
+  correspondencias.forEach(nome => {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "list-group-item list-group-item-action";
+    item.textContent = nome;
+
+    item.onclick = () => {
+      input.value = nome;
+      lista.innerHTML = "";
+      msgNaoEncontrado.classList.add("d-none");
+      loadVinculosAcademicos();
+    };
+
+    lista.appendChild(item);
+  });
+
+  loadVinculosAcademicos();
+}
+
+//Listar vinculos academicos
 async function loadVinculosAcademicos() {
-  const turmaFiltro = document.getElementById("filtro_turma_vinculo")?.value;
-  const professorFiltro = document
-    .getElementById("filtro_professor_vinculo")
-    ?.value
-    ?.trim()
-    .toLowerCase();
+  const turmaFiltro = document.getElementById("filtro_turma_vinculo")?.value || "";
+  const professorFiltro = document.getElementById("filtro_professor_vinculo")?.value?.trim().toLowerCase() || "";
 
   let query = supabaseClient
     .from("professor_disciplina_turma")
@@ -492,97 +578,9 @@ async function loadVinculosAcademicos() {
     container.innerHTML += `
       <div class="d-flex justify-content-between align-items-center border p-2 mb-2">
         <span>
-          ${v.profiles.nome} → 
-          ${v.turmas.nome} - ${v.turmas.ano} → 
-          ${v.disciplinas.nome}
-        </span>
-        <button class="btn btn-sm btn-danger"
-          onclick="excluirVinculoAcademico('${v.id}')">
-          Excluir
-        </button>
-      </div>
-    `;
-  });
-}
-
-//Função para vincular professor/disciplina/turma
-async function vincularAcademico() {
-
-  const professor_id = document.getElementById("select_professor_academico").value;
-  const turma_id = document.getElementById("select_turma_academico").value;
-  const disciplina_id = document.getElementById("select_disciplina_academico").value;
-  
-  //bloquear inserir mais de 1 professor a disciplina na mesma turma
-  const { data: existente, error: errBusca } = await supabaseClient
-	  .from("professor_disciplina_turma")
-	  .select("id, professor_id")
-	  .eq("turma_id", turma_id)
-	  .eq("disciplina_id", disciplina_id)
-	  .maybeSingle();
-
-	if (existente) {
-	  alert("Já existe professor nessa disciplina/turma. Exclua o vínculo atual para trocar.");
-	  return;
-	}
-  
-  const { error } = await supabaseClient
-    .from("professor_disciplina_turma")
-    .insert([{ professor_id, turma_id, disciplina_id }]);
-
-  if (error) {
-    if (error.code === "23505") {
-		alert("Essa disciplina já tem professor vinculado nessa turma. Exclua o vínculo atual para trocar.");
-	} else {
-      alert("Erro ao vincular.");
-    }
-    console.log(error);
-  } else {
-    alert("Vínculo criado com sucesso!");
-    loadVinculosAcademicos();
-  }
-}
-
-//Listar vinculos academicos
-async function loadVinculosAcademicos() {
-
-  const turmaFiltro = document.getElementById("filtro_turma_vinculo")?.value;
-
-  let query = supabaseClient
-    .from("professor_disciplina_turma")
-    .select(`
-      id,
-      turma_id,
-      profiles ( nome ),
-      turmas ( nome, ano ),
-      disciplinas ( nome )
-    `);
-
-  if (turmaFiltro) {
-    query = query.eq("turma_id", turmaFiltro);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.log(error);
-    return;
-  }
-
-  const container = document.getElementById("vinculoAcademicoList");
-  container.innerHTML = "";
-
-  if (data.length === 0) {
-    container.innerHTML = "<p>Nenhum vínculo encontrado.</p>";
-    return;
-  }
-
-  data.forEach(v => {
-    container.innerHTML += `
-      <div class="d-flex justify-content-between align-items-center border p-2 mb-2">
-        <span>
-          ${v.profiles.nome} → 
-          ${v.turmas.nome} - ${v.turmas.ano} → 
-          ${v.disciplinas.nome}
+          ${v.profiles?.nome || "-"} →
+          ${v.turmas?.nome || "-"} - ${v.turmas?.ano || "-"} →
+          ${v.disciplinas?.nome || "-"}
         </span>
         <button class="btn btn-sm btn-danger"
           onclick="excluirVinculoAcademico('${v.id}')">
@@ -595,7 +593,6 @@ async function loadVinculosAcademicos() {
 
 //Excluir vinculo academico
 async function excluirVinculoAcademico(id) {
-
   const confirmar = confirm("Deseja realmente excluir este vínculo?");
   if (!confirmar) return;
 
@@ -615,7 +612,6 @@ async function excluirVinculoAcademico(id) {
 
 //Carregar as disciplinas da turma selecionada
 async function carregarDisciplinasDaTurma() {
-
   const turma_id = document.getElementById("select_turma_academico").value;
 
   if (!turma_id) return;
@@ -647,7 +643,6 @@ async function carregarDisciplinasDaTurma() {
 
 //Filtro de turmas dos vinculos de professor/disciplina/turma
 async function loadFiltroTurmasVinculo() {
-
   const { data, error } = await supabaseClient
     .from("turmas")
     .select("id, nome, ano")
@@ -670,6 +665,16 @@ async function loadFiltroTurmasVinculo() {
   });
 }
 
+document.addEventListener("click", function (e) {
+  const input = document.getElementById("filtro_professor_vinculo");
+  const lista = document.getElementById("lista_sugestoes_professor");
+
+  if (!input || !lista) return;
+
+  if (!input.contains(e.target) && !lista.contains(e.target)) {
+    lista.innerHTML = "";
+  }
+});
 
 document.addEventListener("DOMContentLoaded", async () => {
   await checkAdmin();
@@ -680,7 +685,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadVinculos();
   await loadSelectsAcademico();
   await loadFiltroTurmasVinculo();
+  await carregarProfessoresParaFiltro();
   await loadVinculosAcademicos();
 });
-
-
