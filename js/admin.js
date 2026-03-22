@@ -91,6 +91,9 @@ async function criarUsuario() {
   }
 }
 
+// Cache de todos os usuários para o filtro funcionar sem nova consulta
+let todosUsuarios = [];
+
 async function loadUsers() {
   const { data, error } = await supabaseClient
     .from("profiles")
@@ -102,11 +105,29 @@ async function loadUsers() {
     return;
   }
 
+  todosUsuarios = data || [];
+  renderUsers();
+}
+
+function renderUsers() {
   const container = document.getElementById("userList");
   if (!container) return;
 
-  if (!data || data.length === 0) {
-    container.innerHTML = "<p class='text-muted'>Nenhum usuário cadastrado.</p>";
+  const termoBusca = (document.getElementById("buscaUsuario")?.value || "").toLowerCase().trim();
+  const filtroRole = document.getElementById("filtroRoleUsuario")?.value || "";
+
+  let lista = todosUsuarios;
+
+  if (termoBusca) {
+    lista = lista.filter(u => u.nome?.toLowerCase().includes(termoBusca));
+  }
+
+  if (filtroRole) {
+    lista = lista.filter(u => u.role === filtroRole);
+  }
+
+  if (lista.length === 0) {
+    container.innerHTML = "<p class='text-muted'>Nenhum usuário encontrado.</p>";
     return;
   }
 
@@ -116,14 +137,102 @@ async function loadUsers() {
     professor: "success",
   };
 
-  container.innerHTML = data.map(user => `
+  container.innerHTML = lista.map(user => `
     <div class="d-flex justify-content-between align-items-center border rounded p-2 mb-2">
       <div>
         <strong>${user.nome}</strong>
         <span class="badge text-bg-${badgeColor[user.role] || "secondary"} ms-2">${user.role}</span>
+        <span class="text-muted small ms-2">${user.email || ""}</span>
       </div>
+      <button class="btn btn-sm btn-outline-danger" onclick="confirmarExcluirUsuario('${user.id}', '${user.nome.replace(/'/g, "\\'")}', '${user.role}')">
+        Excluir
+      </button>
     </div>
   `).join("");
+}
+
+async function confirmarExcluirUsuario(userId, nome, role) {
+  const { data: { user } } = await supabaseClient.auth.getUser();
+  if (user?.id === userId) {
+    alert("Você não pode excluir sua própria conta.");
+    return;
+  }
+
+  const problemas = [];
+
+  const { data: vinculoTurma } = await supabaseClient
+    .from("professor_turma")
+    .select("turmas(nome)")
+    .eq("professor_id", userId);
+
+  if (vinculoTurma && vinculoTurma.length > 0) {
+    const turmas = vinculoTurma.map(v => v.turmas?.nome || "?").join(", ");
+    problemas.push("• Professor representante das turmas: " + turmas);
+  }
+
+  const { data: vinculoAcademico } = await supabaseClient
+    .from("professor_disciplina_turma")
+    .select("turmas(nome), disciplinas(nome)")
+    .eq("professor_id", userId);
+
+  if (vinculoAcademico && vinculoAcademico.length > 0) {
+    const itens = vinculoAcademico.map(v => (v.turmas?.nome || "?") + " / " + (v.disciplinas?.nome || "?")).join(", ");
+    problemas.push("• Vínculos acadêmicos: " + itens);
+  }
+
+  if (problemas.length > 0) {
+    alert(
+      "Não é possível excluir \"" + nome + "\" pois ele possui vínculos ativos:\n\n" +
+      problemas.join("\n") +
+      "\n\nRemova esses vínculos primeiro na seção correspondente."
+    );
+    return;
+  }
+
+  const confirmar = confirm(
+    "Tem certeza que deseja excluir o usuário \"" + nome + "\"?\n\nEssa ação é permanente e não pode ser desfeita."
+  );
+  if (!confirmar) return;
+
+  await excluirUsuario(userId, nome);
+}
+
+async function excluirUsuario(userId, nome) {
+  const { error: errProfile } = await supabaseClient
+    .from("profiles")
+    .delete()
+    .eq("id", userId);
+
+  if (errProfile) {
+    alert("Erro ao excluir perfil: " + errProfile.message);
+    console.log(errProfile);
+    return;
+  }
+
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const token = session?.access_token;
+    const SUPABASE_URL = supabaseClient.supabaseUrl;
+
+    const response = await fetch(SUPABASE_URL + "/functions/v1/criar-usuario", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + token,
+      },
+      body: JSON.stringify({ userId }),
+    });
+
+    const result = await response.json();
+    if (!response.ok) {
+      console.warn("Aviso: perfil removido mas erro ao remover do Auth:", result.error);
+    }
+  } catch (err) {
+    console.warn("Aviso: perfil removido mas erro ao remover do Auth:", err.message);
+  }
+
+  alert("Usuário \"" + nome + "\" excluído com sucesso!");
+  await loadUsers();
 }
 
 async function logout() {
