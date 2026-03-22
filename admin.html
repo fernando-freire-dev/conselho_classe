@@ -146,6 +146,28 @@
 
       <div class="card p-4 mb-4">
         <h4>Usuários Cadastrados</h4>
+
+        <div class="row g-2 mb-3">
+          <div class="col-md-7">
+            <input
+              type="text"
+              id="buscaUsuario"
+              class="form-control"
+              placeholder="Buscar por nome..."
+              oninput="renderUsers()"
+              autocomplete="off"
+            >
+          </div>
+          <div class="col-md-5">
+            <select id="filtroRoleUsuario" class="form-select" onchange="renderUsers()">
+              <option value="">Todos os perfis</option>
+              <option value="professor">Professor</option>
+              <option value="coordenacao">Coordenação</option>
+              <option value="admin">Administrador</option>
+            </select>
+          </div>
+        </div>
+
         <div id="userList"></div>
       </div>
     </div>
