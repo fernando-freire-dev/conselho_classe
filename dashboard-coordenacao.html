@@ -51,6 +51,7 @@
 
       <div class="d-flex align-items-center gap-2">
         <span class="navbar-text small d-none d-md-inline" id="navUserLabel"></span>
+        <button class="btn btn-outline-light btn-sm" onclick="abrirModalSenha()" type="button">🔑 Senha</button>
         <button class="btn btn-outline-light btn-sm" id="btnLogout" type="button">Sair</button>
       </div>
     </div>
@@ -142,5 +143,138 @@
   <script src="js/nav.js"></script>
   <script src="js/dashboard-coordenacao.js"></script>
 
+
+<!-- Modal Alterar Senha -->
+<div class="modal fade" id="modalAlterarSenha" tabindex="-1" aria-labelledby="modalSenhaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalSenhaLabel">🔑 Alterar Senha</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Senha atual</label>
+          <div class="input-group">
+            <input type="password" id="senhaAtual" class="form-control" placeholder="Digite sua senha atual">
+            <button class="btn btn-outline-secondary" type="button" onclick="toggleSenhaModal('senhaAtual')">👁</button>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Nova senha</label>
+          <div class="input-group">
+            <input type="password" id="senhaNova" class="form-control" placeholder="Mínimo 6 caracteres">
+            <button class="btn btn-outline-secondary" type="button" onclick="toggleSenhaModal('senhaNova')">👁</button>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Confirmar nova senha</label>
+          <div class="input-group">
+            <input type="password" id="senhaNovaConfirm" class="form-control" placeholder="Repita a nova senha">
+            <button class="btn btn-outline-secondary" type="button" onclick="toggleSenhaModal('senhaNovaConfirm')">👁</button>
+          </div>
+        </div>
+        <div id="feedbackSenha"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btnSalvarSenha" onclick="salvarNovaSenha()">
+          <span id="btnSalvarSenhaTexto">Salvar</span>
+          <span id="btnSalvarSenhaSpinner" class="spinner-border spinner-border-sm ms-2 d-none"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let modalSenhaInstance = null;
+
+function abrirModalSenha() {
+  document.getElementById("senhaAtual").value = "";
+  document.getElementById("senhaNova").value = "";
+  document.getElementById("senhaNovaConfirm").value = "";
+  document.getElementById("feedbackSenha").innerHTML = "";
+
+  if (!modalSenhaInstance) {
+    modalSenhaInstance = new bootstrap.Modal(document.getElementById("modalAlterarSenha"));
+  }
+  modalSenhaInstance.show();
+}
+
+function toggleSenhaModal(inputId) {
+  const input = document.getElementById(inputId);
+  if (input) input.type = input.type === "password" ? "text" : "password";
+}
+
+async function salvarNovaSenha() {
+  const senhaAtual      = document.getElementById("senhaAtual").value;
+  const senhaNova       = document.getElementById("senhaNova").value;
+  const senhaConfirm    = document.getElementById("senhaNovaConfirm").value;
+  const feedback        = document.getElementById("feedbackSenha");
+  const btn             = document.getElementById("btnSalvarSenha");
+  const btnTexto        = document.getElementById("btnSalvarSenhaTexto");
+  const spinner         = document.getElementById("btnSalvarSenhaSpinner");
+
+  feedback.innerHTML = "";
+
+  if (!senhaAtual || !senhaNova || !senhaConfirm) {
+    feedback.innerHTML = `<div class="alert alert-warning py-2">Preencha todos os campos.</div>`;
+    return;
+  }
+
+  if (senhaNova.length < 6) {
+    feedback.innerHTML = `<div class="alert alert-warning py-2">A nova senha precisa ter no mínimo 6 caracteres.</div>`;
+    return;
+  }
+
+  if (senhaNova !== senhaConfirm) {
+    feedback.innerHTML = `<div class="alert alert-warning py-2">A confirmação de senha não confere.</div>`;
+    return;
+  }
+
+  btn.disabled = true;
+  btnTexto.textContent = "Salvando...";
+  spinner.classList.remove("d-none");
+
+  try {
+    // Reautentica com a senha atual para garantir que é o próprio usuário
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    const { error: reAuthErr } = await supabaseClient.auth.signInWithPassword({
+      email: user.email,
+      password: senhaAtual,
+    });
+
+    if (reAuthErr) {
+      feedback.innerHTML = `<div class="alert alert-danger py-2">Senha atual incorreta.</div>`;
+      return;
+    }
+
+    // Atualiza para a nova senha
+    const { error: updateErr } = await supabaseClient.auth.updateUser({
+      password: senhaNova,
+    });
+
+    if (updateErr) {
+      feedback.innerHTML = `<div class="alert alert-danger py-2">Erro ao atualizar senha: ${updateErr.message}</div>`;
+      return;
+    }
+
+    feedback.innerHTML = `<div class="alert alert-success py-2">Senha alterada com sucesso!</div>`;
+
+    // Fecha o modal após 1.5s
+    setTimeout(() => {
+      modalSenhaInstance?.hide();
+    }, 1500);
+
+  } catch (err) {
+    feedback.innerHTML = `<div class="alert alert-danger py-2">Erro inesperado: ${err.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    btnTexto.textContent = "Salvar";
+    spinner.classList.add("d-none");
+  }
+}
+</script>
 </body>
 </html>
