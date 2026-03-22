@@ -60,73 +60,119 @@
 <main class="container-fluid py-4">
   <div class="app-page-title"><h2>Dashboard da Coordenação</h2></div>
   <div class="app-card p-4">
-<div class="card p-4 mb-4">
-    <h4 class="mb-3">Filtros</h4>
 
-    <div class="row g-3">
-      <div class="col-md-3">
-        <label class="form-label">Ensino</label>
-        <select id="filtroEnsino" class="form-select" onchange="onEnsinoChange()">
-          <option value="">Todos</option>
-          <option value="fundamental">Fundamental</option>
-          <option value="medio">Médio</option>
-        </select>
+    <!-- Abas -->
+    <ul class="nav nav-tabs mb-4" id="tabsCoordenacao">
+      <li class="nav-item">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabConselhos">
+          📋 Conselhos
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabAlunos" onclick="onAbaAlunos()">
+          👥 Alunos
+        </button>
+      </li>
+    </ul>
+
+    <div class="tab-content">
+
+      <!-- ── Aba: Conselhos ───────────────────────────────── -->
+      <div class="tab-pane fade show active" id="tabConselhos">
+        <div class="card p-4 mb-4">
+          <h4 class="mb-3">Filtros</h4>
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label">Ensino</label>
+              <select id="filtroEnsino" class="form-select" onchange="onEnsinoChange()">
+                <option value="">Todos</option>
+                <option value="fundamental">Fundamental</option>
+                <option value="medio">Médio</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Turma</label>
+              <select id="filtroTurma" class="form-select" onchange="loadConselhos()">
+                <option value="">Todas</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Bimestre</label>
+              <select id="filtroBimestre" class="form-select" onchange="loadConselhos()">
+                <option value="">Todos</option>
+                <option value="1">1º</option>
+                <option value="2">2º</option>
+                <option value="3">3º</option>
+                <option value="4">4º</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Status</label>
+              <select id="filtroStatus" class="form-select" onchange="loadConselhos()">
+                <option value="">Todos</option>
+                <option value="em_andamento">Em andamento</option>
+                <option value="finalizado">Finalizado</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="card p-4">
+          <div class="table-responsive mt-3">
+            <table class="table table-bordered align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Turma</th>
+                  <th>Ensino</th>
+                  <th>Bimestre</th>
+                  <th>Data</th>
+                  <th>Status</th>
+                  <th style="width: 280px;">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="listaConselhos"></tbody>
+            </table>
+            <div class="col-md-3 d-flex align-items-end mt-2">
+              <button class="btn btn-success w-100" onclick="iniciarConselho()">
+                Iniciar Conselho
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div class="col-md-4">
-        <label class="form-label">Turma</label>
-        <select id="filtroTurma" class="form-select" onchange="loadConselhos()">
-          <option value="">Todas</option>
-        </select>
+      <!-- ── Aba: Alunos ──────────────────────────────────── -->
+      <div class="tab-pane fade" id="tabAlunos">
+        <div class="card p-4 mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="mb-0">Alunos</h4>
+            <button class="btn btn-primary" onclick="abrirModalNovoAluno()">
+              + Novo Aluno
+            </button>
+          </div>
+
+          <!-- Filtro por turma -->
+          <div class="row g-2 mb-3">
+            <div class="col-md-5">
+              <select id="filtroTurmaAlunos" class="form-select" onchange="loadAlunos()">
+                <option value="">Selecione uma turma</option>
+              </select>
+            </div>
+            <div class="col-md-7">
+              <input type="text" id="buscaAluno" class="form-control"
+                placeholder="Buscar por nome ou RA..."
+                oninput="renderAlunos()" autocomplete="off">
+            </div>
+          </div>
+
+          <div id="listaAlunos">
+            <p class="text-muted">Selecione uma turma para ver os alunos.</p>
+          </div>
+        </div>
       </div>
 
-      <div class="col-md-2">
-        <label class="form-label">Bimestre</label>
-        <select id="filtroBimestre" class="form-select" onchange="loadConselhos()">
-          <option value="">Todos</option>
-          <option value="1">1º</option>
-          <option value="2">2º</option>
-          <option value="3">3º</option>
-          <option value="4">4º</option>
-        </select>
-      </div>
-
-      <div class="col-md-3">
-        <label class="form-label">Status</label>
-        <select id="filtroStatus" class="form-select" onchange="loadConselhos()">
-          <option value="">Todos</option>
-          <option value="em_andamento">Em andamento</option>
-          <option value="finalizado">Finalizado</option>
-        </select>
-      </div>
-    </div>
+    </div><!-- /tab-content -->
   </div>
-
-  <div class="card p-4">
-    <div class="table-responsive mt-3">
-      <table class="table table-bordered align-middle">
-        <thead class="table-light">
-          <tr>
-            <th>Turma</th>
-            <th>Ensino</th>
-            <th>Bimestre</th>
-            <th>Data</th>
-            <th>Status</th>
-            <th style="width: 280px;">Ações</th>
-          </tr>
-        </thead>
-        <tbody id="listaConselhos"></tbody>
-      </table>
-	  <div class="col-md-3 d-flex align-items-end">
-			<button class="btn btn-success w-100" onclick="iniciarConselho()">
-				Iniciar Conselho
-			</button>
-		</div>
-    </div>
-  </div>
-
-
-</div>
 </main>
 
   <!-- Bootstrap JS (necessário para dropdown/navbar/modal etc.) -->
