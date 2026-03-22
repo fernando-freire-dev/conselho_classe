@@ -1,0 +1,94 @@
+<!-- ============================================================
+     modals.html — Modais globais do sistema
+     Carregado automaticamente por js/modals.js em todas as páginas.
+     Para adicionar um novo modal: basta incluir aqui e criar
+     as funções correspondentes em js/modals.js.
+     ============================================================ -->
+
+
+<!-- ── Modal: Alterar Senha ──────────────────────────────────── -->
+<div class="modal fade" id="modalAlterarSenha" tabindex="-1" aria-labelledby="modalSenhaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalSenhaLabel">🔑 Alterar Senha</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Senha atual</label>
+          <div class="input-group">
+            <input type="password" id="senhaAtual" class="form-control" placeholder="Digite sua senha atual">
+            <button class="btn btn-outline-secondary" type="button" onclick="toggleSenhaModal('senhaAtual')">👁</button>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Nova senha</label>
+          <div class="input-group">
+            <input type="password" id="senhaNova" class="form-control" placeholder="Mínimo 6 caracteres">
+            <button class="btn btn-outline-secondary" type="button" onclick="toggleSenhaModal('senhaNova')">👁</button>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Confirmar nova senha</label>
+          <div class="input-group">
+            <input type="password" id="senhaNovaConfirm" class="form-control" placeholder="Repita a nova senha">
+            <button class="btn btn-outline-secondary" type="button" onclick="toggleSenhaModal('senhaNovaConfirm')">👁</button>
+          </div>
+        </div>
+        <div id="feedbackSenha"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btnSalvarSenha" onclick="salvarNovaSenha()">
+          <span id="btnSalvarSenhaTexto">Salvar</span>
+          <span id="btnSalvarSenhaSpinner" class="spinner-border spinner-border-sm ms-2 d-none"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── Modal: Editar Vínculo Professor Representante ─────────── -->
+<div class="modal fade" id="modalEditar" tabindex="-1" aria-labelledby="modalEditarLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalEditarLabel">Editar Vínculo</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p><strong>Turma:</strong> <span id="modalTurma"></span></p>
+        <p><strong>Professor atual:</strong> <span id="modalProfessorAtual"></span></p>
+        <div class="mb-3">
+          <label class="form-label">Novo Professor</label>
+          <select id="modalSelectProfessor" class="form-select"></select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="fecharModal()">Cancelar</button>
+        <button type="button" class="btn btn-success" onclick="salvarEdicao()">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── Modal: Notas do Aluno (Conselho) ──────────────────────── -->
+<div class="modal fade" id="modalNotas" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalNotasTitulo">Notas</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body" id="modalNotasCorpo">
+        <!-- Conteúdo preenchido via JS -->
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── Adicione novos modais globais abaixo desta linha ──────── -->
