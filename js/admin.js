@@ -441,13 +441,41 @@ async function loadVinculos() {
         <span>
           ${v.profiles.nome} → ${v.turmas.nome} - ${v.turmas.ano}
         </span>
-        <button class="btn btn-sm btn-warning"
-          onclick='abrirModalEditar(${JSON.stringify(vinculo)})'>
-          Editar
-        </button>
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-warning"
+            onclick='abrirModalEditar(${JSON.stringify(vinculo)})'>
+            Editar
+          </button>
+          <button class="btn btn-sm btn-danger"
+            onclick="excluirVinculo('${v.id}', '${v.profiles.nome.replace(/'/g, "\\'")}', '${(v.turmas.nome + ' - ' + v.turmas.ano).replace(/'/g, "\\'")}')">
+            Excluir
+          </button>
+        </div>
       </div>
     `;
   });
+}
+
+// Excluir vínculo professor representante
+async function excluirVinculo(vinculoId, professorNome, turmaNome) {
+  const confirmar = confirm(
+    `Deseja excluir o vínculo de "${professorNome}" com a turma "${turmaNome}"?\n\nO professor deixará de ser representante dessa turma.`
+  );
+  if (!confirmar) return;
+
+  const { error } = await supabaseClient
+    .from("professor_turma")
+    .delete()
+    .eq("id", vinculoId);
+
+  if (error) {
+    alert("Erro ao excluir vínculo: " + error.message);
+    console.log(error);
+    return;
+  }
+
+  alert("Vínculo excluído com sucesso!");
+  await loadVinculos();
 }
 
 //Função para editar o trocar o professor representante da sala
