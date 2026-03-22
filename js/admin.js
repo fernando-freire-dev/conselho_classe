@@ -19,34 +19,83 @@ async function checkAdmin() {
   }
 }
 
-async function createProfile() {
-  const nome = document.getElementById("nome").value;
-  const user_id = document.getElementById("user_id").value;
-  const role = document.getElementById("role").value;
+// ================================
+// CRIAR USUÁRIO via Edge Function
+// ================================
+async function criarUsuario() {
+  const nome  = document.getElementById("novo_nome").value.trim();
+  const email = document.getElementById("novo_email").value.trim();
+  const senha = document.getElementById("novo_senha").value;
+  const role  = document.getElementById("novo_role").value;
 
-  const { error } = await supabaseClient
-    .from("profiles")
-    .insert([
-      {
-        id: user_id,
-        nome: nome,
-        role: role
-      }
-    ]);
+  const feedback = document.getElementById("feedbackCriarUsuario");
+  const btn      = document.getElementById("btnCriarUsuario");
+  const btnTexto = document.getElementById("btnCriarUsuarioTexto");
+  const spinner  = document.getElementById("btnCriarUsuarioSpinner");
 
-  if (error) {
-    alert("Erro ao salvar perfil.");
-    console.log(error);
-  } else {
-    alert("Perfil criado com sucesso!");
-    loadUsers();
+  feedback.innerHTML = "";
+
+  if (!nome || !email || !senha || !role) {
+    feedback.innerHTML = `<div class="alert alert-warning">Preencha todos os campos.</div>`;
+    return;
+  }
+
+  if (senha.length < 6) {
+    feedback.innerHTML = `<div class="alert alert-warning">A senha precisa ter no mínimo 6 caracteres.</div>`;
+    return;
+  }
+
+  // Mostra loading
+  btn.disabled = true;
+  btnTexto.textContent = "Criando...";
+  spinner.classList.remove("d-none");
+
+  try {
+    // Pega o token do usuário admin logado para autorizar a Edge Function
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const token = session?.access_token;
+
+    const SUPABASE_URL = supabaseClient.supabaseUrl;
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/criar-usuario`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify({ nome, email, senha, role }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || result.error) {
+      feedback.innerHTML = `<div class="alert alert-danger">Erro: ${result.error || "Erro desconhecido."}</div>`;
+      return;
+    }
+
+    feedback.innerHTML = `<div class="alert alert-success">${result.message}</div>`;
+
+    // Limpa os campos
+    document.getElementById("novo_nome").value  = "";
+    document.getElementById("novo_email").value = "";
+    document.getElementById("novo_senha").value = "";
+    document.getElementById("novo_role").value  = "professor";
+
+    await loadUsers();
+
+  } catch (err) {
+    feedback.innerHTML = `<div class="alert alert-danger">Erro de conexão: ${err.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    btnTexto.textContent = "Criar Usuário";
+    spinner.classList.add("d-none");
   }
 }
 
 async function loadUsers() {
   const { data, error } = await supabaseClient
     .from("profiles")
-    .select("*");
+    .select("*")
+    .order("nome", { ascending: true });
 
   if (error) {
     console.log(error);
@@ -55,13 +104,26 @@ async function loadUsers() {
 
   const container = document.getElementById("userList");
   if (!container) return;
-  container.innerHTML = "";
 
-  data.forEach(user => {
-    container.innerHTML += `
-      <p><strong>${user.nome}</strong> - ${user.role}</p>
-    `;
-  });
+  if (!data || data.length === 0) {
+    container.innerHTML = "<p class='text-muted'>Nenhum usuário cadastrado.</p>";
+    return;
+  }
+
+  const badgeColor = {
+    admin: "danger",
+    coordenacao: "primary",
+    professor: "success",
+  };
+
+  container.innerHTML = data.map(user => `
+    <div class="d-flex justify-content-between align-items-center border rounded p-2 mb-2">
+      <div>
+        <strong>${user.nome}</strong>
+        <span class="badge text-bg-${badgeColor[user.role] || "secondary"} ms-2">${user.role}</span>
+      </div>
+    </div>
+  `).join("");
 }
 
 async function logout() {
