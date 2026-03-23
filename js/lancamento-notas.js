@@ -142,6 +142,34 @@ async function processarMapao(event) {
   const file = event.target.files[0];
   if (!file) return;
 
+  const disciplinaNome = localStorage.getItem("disciplina_nome");
+  if (!disciplinaNome) {
+    alert("Erro: nome da disciplina não encontrado no sistema.");
+    return;
+  }
+
+  // Busca as disciplinas da turma no banco ANTES de abrir o arquivo
+  // (precisa ser aqui pois o reader.onload não é async)
+  let disciplinasBanco = [];
+  try {
+    const { data: discData } = await supabaseClient
+      .from("turma_disciplinas")
+      .select("disciplinas(id, nome)")
+      .eq("turma_id", turmaId);
+    disciplinasBanco = (discData || [])
+      .filter(d => d.disciplinas)
+      .map(d => d.disciplinas.nome);
+  } catch(e) {
+    console.warn("Não foi possível buscar disciplinas do banco:", e);
+  }
+
+  // Função de matching: compara por igualdade ou prefixo (para nomes truncados)
+  function matchDisciplina(nomeMapao, nomeBanco) {
+    const nm = normalizarTexto(nomeMapao);
+    const nb = normalizarTexto(nomeBanco);
+    return nb.startsWith(nm) || nm.startsWith(nb);
+  }
+
   const reader = new FileReader();
 
   reader.onload = function (e) {
@@ -171,33 +199,7 @@ async function processarMapao(event) {
 
       // 2. Encontrar a coluna da disciplina usando matching por prefixo
       // O mapão trunca nomes longos (ex: "LÓGICA E LINGUAGEM DE PROGRAMA" em vez do nome completo)
-      // Por isso buscamos as disciplinas reais do banco e comparamos por prefixo normalizado
-      const disciplinaNome = localStorage.getItem("disciplina_nome");
-      if (!disciplinaNome) {
-        alert("Erro: nome da disciplina não encontrado no sistema.");
-        return;
-      }
-
-      // Busca todas as disciplinas da turma no banco para usar como referência
-      let disciplinasBanco = [];
-      try {
-        const { data: discData } = await supabaseClient
-          .from("turma_disciplinas")
-          .select("disciplinas(id, nome)")
-          .eq("turma_id", turmaId);
-        disciplinasBanco = (discData || [])
-          .filter(d => d.disciplinas)
-          .map(d => d.disciplinas.nome);
-      } catch(e) {
-        console.warn("Não foi possível buscar disciplinas do banco:", e);
-      }
-
-      // Função de matching: compara por igualdade ou prefixo (para nomes truncados)
-      function matchDisciplina(nomeMapao, nomeBanco) {
-        const nm = normalizarTexto(nomeMapao);
-        const nb = normalizarTexto(nomeBanco);
-        return nb.startsWith(nm) || nm.startsWith(nb);
-      }
+      // disciplinasBanco foi carregado antes do reader.onload para evitar await dentro do callback
 
       // Tenta encontrar qual disciplina do banco corresponde à disciplina atual
       // Primeiro tenta exato, depois por prefixo
