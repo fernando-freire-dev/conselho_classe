@@ -63,44 +63,41 @@
   <h5 id="boasVindas" class="mb-4"></h5>
 
   <!-- MENU PRINCIPAL -->
-  <div id="menuPrincipal" class="text-center">
-
-    <div class="row justify-content-center">
-
-      <div class="col-md-4 mb-3">
-        <button 
-          class="btn btn-primary btn-lg w-100"
-          style="height:120px; font-size:20px;"
-          onclick="abrirLancamento()">
-          📊<br>
-          Lançar Notas
-        </button>
-      </div>
-
-      <div class="col-md-4 mb-3">
-        <button
-          class="btn btn-outline-primary btn-lg w-100"
-          style="height:120px; font-size:20px;"
-          onclick="window.location.href='importar-mapao.html'">
-          📥<br>
-          Subir Mapão
-        </button>
-      </div>
-
-      <div class="col-md-4 mb-3">
-        <button 
-		  id="btnConselho"
-		  class="btn btn-warning btn-lg w-100"
-		  style="height:120px; font-size:20px;"
-		  onclick="irParaConselho()">
-		  📋<br>
-		  Conselho de Classe
-		</button>
-      </div>
-
-    </div>
-
-  </div>
+	<div id="menuPrincipal" class="text-center">
+	
+	  <div class="row justify-content-center">
+	
+	    <div class="col-md-4 mb-3">
+	      <button 
+	        class="menu-btn btn-notas w-100"
+	        onclick="abrirLancamento()">
+	        📊<br>
+	        Lançar Notas
+	      </button>
+	    </div>
+	
+	    <div class="col-md-4 mb-3">
+	      <button
+	        class="menu-btn btn-mapao w-100"
+	        onclick="window.location.href='importar-mapao.html'">
+	        📥<br>
+	        Subir Mapão
+	      </button>
+	    </div>
+	
+	    <div class="col-md-4 mb-3">
+	      <button 
+	        id="btnConselho"
+	        class="menu-btn btn-conselho w-100"
+	        onclick="irParaConselho()">
+	        📋<br>
+	        Conselho de Classe
+	      </button>
+	    </div>
+	
+	  </div>
+	
+	</div>
 
   <!-- ÁREA DE DISCIPLINAS (fica oculta até clicar em lançar notas) -->
   <div id="areaDisciplinas" style="display:none;" class="mt-4">
