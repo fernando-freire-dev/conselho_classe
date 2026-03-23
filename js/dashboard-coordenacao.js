@@ -527,7 +527,7 @@ async function visualizarNotasFaltasCoordenacao() {
 
     const { data: disciplinasRel, error: errDisciplinas } = await supabaseClient
       .from("turma_disciplinas")
-      .select("disciplinas(id, nome)")
+      .select("disciplinas(id, nome, apelido)")
       .eq("turma_id", turmaId);
 
     if (errDisciplinas) {
@@ -539,8 +539,9 @@ async function visualizarNotasFaltasCoordenacao() {
     const disciplinas = (disciplinasRel || [])
       .filter(item => item.disciplinas)
       .map(item => ({
-        id: item.disciplinas.id,
-        nome: item.disciplinas.nome
+        id:      item.disciplinas.id,
+        nome:    item.disciplinas.nome,
+        apelido: item.disciplinas.apelido || null,
       }))
       .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 
@@ -612,12 +613,16 @@ function renderPreviewNotasFaltasCoordenacao({ turmaInfo, bimestre, alunos, disc
   let totalEsperado = alunos.length * disciplinas.length;
   let totalComNota = 0;
 
-  const thDisciplinas = disciplinas.map(d => `
-    <th>
-      <div>${d.nome}</div>
-      <div class="small text-muted">Média / Faltas</div>
-    </th>
-  `).join("");
+  const thDisciplinas = disciplinas.map(d => {
+    const label = d.apelido || d.nome;
+    const title = d.apelido ? `title="${d.nome}"` : "";
+    return `
+      <th ${title}>
+        <div>${label}</div>
+        <div class="small text-muted">Média / Faltas</div>
+      </th>
+    `;
+  }).join("");
 
   const linhas = alunos.map(aluno => {
     const tds = disciplinas.map(disc => {
