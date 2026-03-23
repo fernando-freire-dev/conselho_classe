@@ -86,8 +86,35 @@ async function configurarCoordenacao() {
   }
 
   document.getElementById("subtituloTurma").textContent = "Selecione a turma acima para continuar.";
-  bloquearUpload(""); // limpa qualquer mensagem, mas mantém bloqueado até selecionar turma
   bloquearUpload("Selecione uma turma para habilitar a importação.");
+
+  aplicarPreSelecaoCoordenacao();
+}
+
+function aplicarPreSelecaoCoordenacao() {
+  const turmaSalva = localStorage.getItem("mapao_coord_turma_id");
+  const bimestreSalvo = localStorage.getItem("mapao_coord_bimestre");
+
+  const turmaSelect = document.getElementById("turmaSelect");
+  const bimestreSelect = document.getElementById("bimestreSelect");
+
+  if (turmaSalva && turmaSelect) {
+    const existeTurma = [...turmaSelect.options].some(opt => opt.value === turmaSalva);
+    if (existeTurma) {
+      turmaSelect.value = turmaSalva;
+      selecionarTurma(turmaSalva);
+    }
+  }
+
+  if (bimestreSalvo && bimestreSelect) {
+    const existeBimestre = [...bimestreSelect.options].some(opt => opt.value === bimestreSalvo);
+    if (existeBimestre) {
+      bimestreSelect.value = bimestreSalvo;
+    }
+  }
+
+  localStorage.removeItem("mapao_coord_turma_id");
+  localStorage.removeItem("mapao_coord_bimestre");
 }
 
 function selecionarTurma(id) {
