@@ -72,7 +72,7 @@ async function carregarAlunos() {
         <td class="col-chamada">${aluno.numero_chamada ?? ""}</td>
         <td class="col-aluno">${aluno.nome}</td>
         <td>
-          <input type="number" min="0" max="10" step="1"
+          <input type="number" min="0" max="10" step="0.1"
             class="form-control media"
             data-aluno="${aluno.id}"
             value="${notaExistente?.media ?? ''}">
@@ -126,4 +126,163 @@ async function salvarNotas() {
 document.addEventListener("DOMContentLoaded", async () => {
   carregarInfo();
   await carregarAlunos();
+
+  const fileInput = document.getElementById("inputMapao");
+  if (fileInput) {
+    fileInput.addEventListener("change", processarMapao);
+  }
 });
+
+function importarMapao() {
+  const input = document.getElementById("inputMapao");
+  if (input) input.click();
+}
+
+async function processarMapao(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = function (e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+
+      const firstSheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[firstSheetName];
+      const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+      // 1. Encontrar a linha de cabeçalho (procurar "ALUNO" na primeira coluna)
+      let headerRowIndex = -1;
+      const alunoColIndex = 0;
+
+      for (let i = 0; i < json.length; i++) {
+        if (compararTextos(json[i][0], "ALUNO")) {
+          headerRowIndex = i;
+          break;
+        }
+      }
+
+      if (headerRowIndex === -1) {
+        alert("Não foi possível encontrar a célula 'ALUNO' na primeira coluna do arquivo.");
+        return;
+      }
+
+      // 2. Encontrar a coluna da disciplina
+      const disciplinaNome = localStorage.getItem("disciplina_nome");
+      if (!disciplinaNome) {
+        alert("Erro: nome da disciplina não encontrado no sistema.");
+        return;
+      }
+
+      const headerRow = json[headerRowIndex];
+      let discColIndex = -1;
+
+      for (let j = 0; j < headerRow.length; j++) {
+        if (compararTextos(headerRow[j], disciplinaNome)) {
+          discColIndex = j;
+          break;
+        }
+      }
+
+      if (discColIndex === -1) {
+        alert(`Disciplina "${disciplinaNome}" não encontrada na linha de cabeçalho do arquivo.`);
+        return;
+      }
+
+      // 3. Identificar o range da célula mesclada da disciplina
+      let endColIndex = discColIndex;
+      if (sheet['!merges']) {
+        const merge = sheet['!merges'].find(m => m.s.r === headerRowIndex && m.s.c === discColIndex);
+        if (merge) endColIndex = merge.e.c;
+      }
+
+      // 4. Encontrar as colunas "M" (Média) e "F" (Faltas) na linha abaixo
+      const subHeaderRow = json[headerRowIndex + 1];
+      let mediaColIndex = -1;
+      let faltasColIndex = -1;
+
+      if (subHeaderRow) {
+        for (let c = discColIndex; c <= endColIndex; c++) {
+          if (compararTextos(subHeaderRow[c], "M") && mediaColIndex === -1) {
+            mediaColIndex = c;
+          } else if (compararTextos(subHeaderRow[c], "F") && mediaColIndex !== -1 && faltasColIndex === -1) {
+            // A coluna F vem logo após a M dentro do bloco da disciplina
+            faltasColIndex = c;
+          }
+        }
+
+        // Fallback: se não achou "F" no range, tenta a coluna imediatamente após a média
+        if (mediaColIndex !== -1 && faltasColIndex === -1) {
+          faltasColIndex = mediaColIndex + 1;
+        }
+      }
+
+      if (mediaColIndex === -1) {
+        alert("Coluna 'M' (Média) não encontrada abaixo da disciplina.");
+        return;
+      }
+
+      // 5. Preencher os inputs com as notas e faltas encontradas
+      let notasPreenchidas = 0;
+      const rowsHtml = document.querySelectorAll("#corpoTabela tr");
+
+      for (let r = headerRowIndex + 2; r < json.length; r++) {
+        const rowData = json[r];
+        const nomeExcel = rowData[alunoColIndex];
+
+        if (nomeExcel && typeof nomeExcel === "string") {
+          rowsHtml.forEach(tr => {
+            const nomeHtml = tr.querySelector(".col-aluno")?.innerText;
+            const inputMedia = tr.querySelector(".media");
+            const inputFaltas = tr.querySelector(".faltas");
+
+            if (nomeHtml && inputMedia && compararTextos(nomeHtml, nomeExcel)) {
+
+              // Média
+              const notaExcel = rowData[mediaColIndex];
+              if (notaExcel !== undefined && notaExcel !== null && notaExcel !== "") {
+                const notaFormatada = String(notaExcel).replace(",", ".");
+                const valorFloat = parseFloat(notaFormatada);
+                if (!isNaN(valorFloat)) {
+                  inputMedia.value = valorFloat;
+                  notasPreenchidas++;
+                }
+              }
+
+              // Faltas — valor "-" é tratado como 0
+              if (inputFaltas && faltasColIndex !== -1) {
+                const faltaExcel = rowData[faltasColIndex];
+                const faltaStr = String(faltaExcel ?? "").trim();
+                if (faltaStr === "-" || faltaStr === "") {
+                  inputFaltas.value = 0;
+                } else {
+                  const faltaFormatada = faltaStr.replace(",", ".");
+                  const faltaFloat = parseFloat(faltaFormatada);
+                  if (!isNaN(faltaFloat)) {
+                    inputFaltas.value = faltaFloat;
+                  }
+                }
+              }
+            }
+          });
+        }
+      }
+
+      if (notasPreenchidas > 0) {
+        alert(`Sucesso! ${notasPreenchidas} notas e faltas foram importadas do Mapão.`);
+      } else {
+        alert("Nenhuma nota foi preenchida. Verifique se os nomes dos alunos correspondem.");
+      }
+
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao processar o arquivo.");
+    }
+
+    event.target.value = "";
+  };
+
+  reader.readAsArrayBuffer(file);
+}
