@@ -212,13 +212,32 @@ async function processarMapao(event) {
       const headerRow = json[headerRowIndex];
       let discColIndex = -1;
 
+      // O XLSX.js expande células mescladas repetindo o valor em todas as colunas do merge.
+      // Isso pode causar falsos positivos se encontrarmos a disciplina errada primeiro.
+      // Estratégia: varrer apenas células únicas (pular duplicatas consecutivas)
+      // e escolher o match com maior sobreposição de texto (melhor match).
+      let melhorMatchTamanho = 0;
+      let ultimaCelula = null;
+
       for (let j = 0; j < headerRow.length; j++) {
-        // O mapão armazena o nome com quebra de linha + código numérico
-        // Ex: "PROJETO MULTIDISCIPLINAR\n9936" — pegamos só a parte antes do \n
-        const cellNome = String(headerRow[j] ?? "").split("\n")[0].trim();
-        if (matchDisciplina(cellNome, disciplinaAlvo)) {
+        const cellValor = String(headerRow[j] ?? "").split("\n")[0].trim();
+
+        // Pular células duplicadas do merge (mesmo valor que a anterior)
+        if (cellValor === ultimaCelula) continue;
+        ultimaCelula = cellValor;
+
+        if (!cellValor) continue;
+
+        const nm = normalizarTexto(cellValor);
+        const nd = normalizarTexto(disciplinaAlvo);
+
+        // Calcula o tamanho do prefixo comum
+        const prefixoComum = Math.min(nm.length, nd.length);
+        const faz_match = nd.startsWith(nm) || nm.startsWith(nd);
+
+        if (faz_match && prefixoComum > melhorMatchTamanho) {
+          melhorMatchTamanho = prefixoComum;
           discColIndex = j;
-          break;
         }
       }
 
