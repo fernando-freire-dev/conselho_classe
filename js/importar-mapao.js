@@ -191,12 +191,16 @@ async function processarArquivo(event) {
     // 2. Buscar TODAS as disciplinas da turma no banco
     const { data: discsBanco } = await supabaseClient
       .from("turma_disciplinas")
-      .select("disciplinas(id, nome)")
+      .select("disciplinas(id, nome, apelido)")
       .eq("turma_id", turmaId);
 
     const todasDiscs = (discsBanco || [])
       .filter(d => d.disciplinas)
-      .map(d => ({ id: d.disciplinas.id, nome: d.disciplinas.nome }));
+      .map(d => ({
+        id:      d.disciplinas.id,
+        nome:    d.disciplinas.nome,
+        apelido: d.disciplinas.apelido || null,
+      }));
 
     if (todasDiscs.length === 0) {
       feedback.innerHTML = `<div class="alert alert-warning">Nenhuma disciplina cadastrada para essa turma.</div>`;
@@ -261,7 +265,7 @@ async function processarArquivo(event) {
     for (const disc of todasDiscs) {
       const cols = encontrarColunaDisc(disc.nome);
       if (cols) {
-        mapaDiscsGlobal[disc.id] = { ...cols, disciplina_nome: disc.nome };
+        mapaDiscsGlobal[disc.id] = { ...cols, disciplina_nome: disc.nome, disciplina_apelido: disc.apelido };
         disciplinasOrdenadas.push(disc.id);
       }
     }
@@ -363,9 +367,12 @@ function montarPrevia(bimestre, nomeArquivo) {
 
   // Cabeçalho
   const cabecalho = document.getElementById("cabecalhoPrevia");
-  const thDiscs   = disciplinasOrdenadas.map(id =>
-    `<th><div>${mapaDiscsGlobal[id].disciplina_nome}</div><div class="badge-disc">Média / Faltas</div></th>`
-  ).join("");
+  const thDiscs   = disciplinasOrdenadas.map(id => {
+    const d = mapaDiscsGlobal[id];
+    const label = d.disciplina_apelido || d.disciplina_nome;
+    const title = d.disciplina_apelido ? `title="${d.disciplina_nome}"` : "";
+    return `<th ${title}><div>${label}</div><div class="badge-disc">Média / Faltas</div></th>`;
+  }).join("");
   cabecalho.innerHTML = `
     <tr>
       <th style="width:40px">#</th>
