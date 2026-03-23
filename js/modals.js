@@ -272,23 +272,39 @@ async function salvarNovoAluno() {
   spinner.classList.remove("d-none");
 
   try {
-    // Verifica se RA já existe
-    const { data: existente } = await supabaseClient
+    // 1. Verifica se RA já existe em qualquer turma
+    const { data: raExistente } = await supabaseClient
       .from("alunos")
-      .select("id")
+      .select("id, nome")
       .eq("id", ra)
       .maybeSingle();
 
-    if (existente) {
-      feedback.innerHTML = `<div class="alert alert-danger py-2">Já existe um aluno com o RA <strong>${ra}</strong>.</div>`;
+    if (raExistente) {
+      feedback.innerHTML = `<div class="alert alert-danger py-2">Já existe um aluno com o RA <strong>${ra}</strong> (${raExistente.nome}).</div>`;
       return;
     }
 
+    // 2. Verifica se número de chamada já existe na mesma turma
+    if (numeroChamada) {
+      const { data: chamadaExistente } = await supabaseClient
+        .from("alunos")
+        .select("id, nome")
+        .eq("turma_id", turmaId)
+        .eq("numero_chamada", parseInt(numeroChamada))
+        .maybeSingle();
+
+      if (chamadaExistente) {
+        feedback.innerHTML = `<div class="alert alert-danger py-2">O número de chamada <strong>${numeroChamada}</strong> já pertence ao aluno <strong>${chamadaExistente.nome}</strong> nessa turma.</div>`;
+        return;
+      }
+    }
+
+    // 3. Salva com nome em maiúsculas
     const { error } = await supabaseClient
       .from("alunos")
       .insert([{
         id: ra,
-        nome,
+        nome: nome.toUpperCase(),
         turma_id: turmaId,
         numero_chamada: numeroChamada ? parseInt(numeroChamada) : null,
         foto_url: null,
