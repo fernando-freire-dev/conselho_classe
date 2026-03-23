@@ -180,7 +180,10 @@ async function processarMapao(event) {
       let discColIndex = -1;
 
       for (let j = 0; j < headerRow.length; j++) {
-        if (compararTextos(headerRow[j], disciplinaNome)) {
+        // O mapão armazena o nome com quebra de linha + código numérico
+        // Ex: "PROJETO MULTIDISCIPLINAR\n9936" — pegamos só a parte antes do \n
+        const cellNome = String(headerRow[j] ?? "").split("\n")[0].trim();
+        if (compararTextos(cellNome, disciplinaNome)) {
           discColIndex = j;
           break;
         }
