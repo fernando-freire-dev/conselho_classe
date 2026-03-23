@@ -283,18 +283,6 @@ async function processarMapao(event) {
       let notasPreenchidas = 0;
       const rowsHtml = document.querySelectorAll("#corpoTabela tr");
 
-      // === DEBUG — remover após confirmar funcionamento ===
-      console.log("=== DEBUG MAPÃO ===");
-      console.log("headerRowIndex:", headerRowIndex);
-      console.log("discColIndex:", discColIndex, "| mediaColIndex:", mediaColIndex, "| faltasColIndex:", faltasColIndex);
-      console.log("Nomes no HTML:", Array.from(rowsHtml).map(tr => tr.querySelector(".col-aluno")?.innerText));
-      const primeirosAlunos = [];
-      for (let r2 = headerRowIndex + 2; r2 < Math.min(headerRowIndex + 5, json.length); r2++) {
-        primeirosAlunos.push(json[r2][alunoColIndex]);
-      }
-      console.log("Primeiros nomes no Excel:", primeirosAlunos);
-      // === FIM DEBUG ===
-
       for (let r = headerRowIndex + 2; r < json.length; r++) {
         const rowData = json[r];
         const nomeExcel = rowData[alunoColIndex];
