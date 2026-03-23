@@ -102,3 +102,36 @@ body.app-body{
 .app-navbar .navbar-brand { padding-top: .2rem; padding-bottom: .2rem; }
 .app-navbar .nav-link { padding-top: .65rem; padding-bottom: .65rem; }
 .app-navbar .navbar-text { margin: 0; }
+
+/* BOTÃO PADRÃO DO MENU */
+.menu-btn {
+  height: 120px;
+  font-size: 20px;
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-weight: 600;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+/* HOVER PADRÃO */
+.menu-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.25);
+}
+
+/* LANÇAR NOTAS (AZUL) */
+.btn-notas {
+  background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+}
+
+/* SUBIR MAPÃO (VERDE) */
+.btn-mapao {
+  background: linear-gradient(135deg, #198754, #157347);
+}
+
+/* CONSELHO (LARANJA/AMARELO MAIS FORTE) */
+.btn-conselho {
+  background: linear-gradient(135deg, #fd7e14, #e8590c);
+}
