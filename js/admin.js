@@ -589,7 +589,7 @@ function fecharModal() {
 
 //Mostrar as seções da página admin
 function mostrarSecao(secao) {
-  const secoes = ["perfil", "turma", "vinculo", "vinculo-academico"];
+  const secoes = ["perfil", "turma", "vinculo", "vinculo-academico", "disciplinas"];
 
   secoes.forEach(s => {
     const div = document.getElementById("secao-" + s);
@@ -597,6 +597,84 @@ function mostrarSecao(secao) {
       div.style.display = (s === secao) ? "block" : "none";
     }
   });
+
+  // Carrega disciplinas ao entrar na seção
+  if (secao === "disciplinas") loadDisciplinasAdmin();
+}
+
+// ── Gerenciamento de Apelidos de Disciplinas ──────────────────
+
+async function loadDisciplinasAdmin() {
+  const container = document.getElementById("listaDisciplinasAdmin");
+  if (!container) return;
+  container.innerHTML = `<p class="text-muted">Carregando...</p>`;
+
+  const { data, error } = await supabaseClient
+    .from("disciplinas")
+    .select("id, nome, apelido")
+    .order("nome", { ascending: true });
+
+  if (error) {
+    container.innerHTML = `<div class="alert alert-danger">Erro ao carregar disciplinas.</div>`;
+    console.log(error);
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    container.innerHTML = `<p class="text-muted">Nenhuma disciplina cadastrada.</p>`;
+    return;
+  }
+
+  container.innerHTML = data.map(disc => `
+    <div class="d-flex align-items-center gap-3 border rounded p-2 mb-2">
+      <div style="min-width:280px;">
+        <span class="fw-semibold">${disc.nome}</span>
+      </div>
+      <div class="flex-grow-1">
+        <input
+          type="text"
+          class="form-control form-control-sm"
+          id="apelido_${disc.id}"
+          placeholder="Apelido curto (ex: Prog. Back-End)"
+          value="${disc.apelido || ""}"
+          maxlength="40"
+        >
+      </div>
+      <button class="btn btn-sm btn-outline-primary" onclick="salvarApelido('${disc.id}')">
+        Salvar
+      </button>
+    </div>
+  `).join("");
+}
+
+async function salvarApelido(discId) {
+  const input = document.getElementById(`apelido_${discId}`);
+  if (!input) return;
+
+  const apelido = input.value.trim() || null;
+
+  const { error } = await supabaseClient
+    .from("disciplinas")
+    .update({ apelido })
+    .eq("id", discId);
+
+  if (error) {
+    alert("Erro ao salvar apelido: " + error.message);
+    console.log(error);
+    return;
+  }
+
+  // Feedback visual sem alert
+  const btn = input.nextElementSibling;
+  const originalText = btn.textContent;
+  btn.textContent = "✅ Salvo";
+  btn.classList.remove("btn-outline-primary");
+  btn.classList.add("btn-success");
+  setTimeout(() => {
+    btn.textContent = originalText;
+    btn.classList.remove("btn-success");
+    btn.classList.add("btn-outline-primary");
+  }, 2000);
 }
 
 //Carregar disciplinas no Select
