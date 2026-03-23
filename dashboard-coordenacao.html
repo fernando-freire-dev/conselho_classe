@@ -64,13 +64,18 @@
     <!-- Abas -->
     <ul class="nav nav-tabs mb-4" id="tabsCoordenacao">
       <li class="nav-item">
-        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabConselhos">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabConselhos" type="button">
           📋 Conselhos
         </button>
       </li>
       <li class="nav-item">
-        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabAlunos" onclick="onAbaAlunos()">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabAlunos" type="button" onclick="onAbaAlunos()">
           👥 Alunos
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabNotasFaltas" type="button" onclick="onAbaNotasFaltas()">
+          📊 Notas e Faltas
         </button>
       </li>
     </ul>
@@ -132,12 +137,10 @@
               </thead>
               <tbody id="listaConselhos"></tbody>
             </table>
+
             <div class="d-flex gap-2 mt-2">
               <button class="btn btn-success" onclick="iniciarConselho()">
                 Iniciar Conselho
-              </button>
-              <button class="btn btn-outline-primary" onclick="window.location.href='importar-mapao.html'">
-                📥 Importar Mapão
               </button>
             </div>
           </div>
@@ -162,14 +165,64 @@
               </select>
             </div>
             <div class="col-md-7">
-              <input type="text" id="buscaAluno" class="form-control"
+              <input
+                type="text"
+                id="buscaAluno"
+                class="form-control"
                 placeholder="Buscar por nome ou RA..."
-                oninput="renderAlunos()" autocomplete="off">
+                oninput="renderAlunos()"
+                autocomplete="off"
+              >
             </div>
           </div>
 
           <div id="listaAlunos">
             <p class="text-muted">Selecione uma turma para ver os alunos.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Aba: Notas e Faltas ──────────────────────────── -->
+      <div class="tab-pane fade" id="tabNotasFaltas">
+        <div class="card p-4 mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="mb-0">Notas e Faltas</h4>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Turma</label>
+              <select id="filtroTurmaNotasFaltas" class="form-select">
+                <option value="">Selecione uma turma</option>
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Bimestre</label>
+              <select id="filtroBimestreNotasFaltas" class="form-select">
+                <option value="">Selecione</option>
+                <option value="1">1º Bimestre</option>
+                <option value="2">2º Bimestre</option>
+                <option value="3">3º Bimestre</option>
+                <option value="4">4º Bimestre</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 mb-4">
+            <button class="btn btn-success" onclick="abrirImportacaoMapaoCoordenacao()">
+              📥 Subir Mapão
+            </button>
+
+            <button class="btn btn-primary" onclick="visualizarNotasFaltasCoordenacao()">
+              📄 Notas e Faltas
+            </button>
+          </div>
+
+          <div id="previewNotasFaltasCoordenacao">
+            <p class="text-muted mb-0">
+              Selecione uma turma e um bimestre para visualizar as notas e faltas importadas.
+            </p>
           </div>
         </div>
       </div>
