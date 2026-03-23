@@ -1,64 +1,135 @@
 // ============================================================
 // js/importar-mapao.js
-// Importa o mapão completo e gera prévia de todas as disciplinas
+// Importa o mapão completo da sala — todas as disciplinas
+// Acesso: professor representante e coordenação
 // ============================================================
 
-let professorLogado = null;
-let minhasDisciplinas = []; // { turma_id, disciplina_id, turma_nome, disciplina_nome }
-let dadosImportados = [];   // { aluno_id, aluno_nome, numero_chamada, disciplinas: { disc_id: { media, faltas } } }
-let disciplinasOrdenadas = []; // disciplinas que apareceram no mapão, na ordem das colunas
+let usuarioLogado  = null;
+let turmaId        = null;
+let dadosImportados    = [];
+let disciplinasOrdenadas = [];
+let mapaDiscsGlobal    = {};
 
 // ── Inicialização ─────────────────────────────────────────────
 
 document.addEventListener("DOMContentLoaded", async () => {
-  await verificarProfessor();
-
-  const input = document.getElementById("inputMapao");
-  if (input) input.addEventListener("change", processarArquivo);
+  await verificarUsuario();
+  document.getElementById("inputMapao")
+    .addEventListener("change", processarArquivo);
 });
 
-async function verificarProfessor() {
+async function verificarUsuario() {
   const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) { window.location.href = "index.html"; return; }
 
   const { data: profile } = await supabaseClient
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+    .from("profiles").select("*").eq("id", user.id).single();
 
-  if (!profile || profile.role !== "professor") {
-    alert("Acesso restrito a professores.");
+  if (!profile || !["professor", "coordenacao"].includes(profile.role)) {
+    alert("Acesso restrito.");
     window.location.href = "dashboard.html";
     return;
   }
 
-  professorLogado = profile;
+  usuarioLogado = profile;
 
-  // Carrega as disciplinas vinculadas ao professor
-  const { data, error } = await supabaseClient
-    .from("professor_disciplina_turma")
-    .select(`
-      turma_id,
-      disciplina_id,
-      turmas ( nome, ano ),
-      disciplinas ( nome )
-    `)
-    .eq("professor_id", professorLogado.id);
+  if (profile.role === "professor") {
+    await configurarProfessor();
+  } else {
+    await configurarCoordenacao();
+  }
+}
 
-  if (error) { console.log(error); return; }
-  minhasDisciplinas = (data || []).map(d => ({
-    turma_id:        d.turma_id,
-    disciplina_id:   d.disciplina_id,
-    turma_nome:      d.turmas?.nome || "",
-    turma_ano:       d.turmas?.ano  || "",
-    disciplina_nome: d.disciplinas?.nome || "",
-  }));
+// Fluxo professor: busca a turma representante automaticamente
+async function configurarProfessor() {
+  const { data: rep } = await supabaseClient
+    .from("professor_turma")
+    .select("turma_id, turmas(nome, ano)")
+    .eq("professor_id", usuarioLogado.id)
+    .single();
+
+  if (!rep) {
+    bloquearUpload("Você não é professor representante de nenhuma turma. Fale com o administrador.");
+    return;
+  }
+
+  turmaId = rep.turma_id;
+  document.getElementById("subtituloTurma").textContent =
+    `Turma: ${rep.turmas?.nome || ""} - ${rep.turmas?.ano || ""}`;
+}
+
+// Fluxo coordenação: exibe um select para escolher a turma
+async function configurarCoordenacao() {
+  const { data: turmas } = await supabaseClient
+    .from("turmas")
+    .select("id, nome, ano")
+    .order("nome", { ascending: true });
+
+  if (!turmas || turmas.length === 0) {
+    bloquearUpload("Nenhuma turma cadastrada no sistema.");
+    return;
+  }
+
+  // Mostrar select de turma
+  const selectContainer = document.getElementById("containerSelectTurma");
+  if (selectContainer) {
+    selectContainer.innerHTML = `
+      <div class="col-md-4">
+        <label class="form-label">Turma</label>
+        <select id="turmaSelect" class="form-select" onchange="selecionarTurma(this.value)">
+          <option value="">Selecione a turma...</option>
+          ${turmas.map(t => `<option value="${t.id}">${t.nome} - ${t.ano}</option>`).join("")}
+        </select>
+      </div>
+    `;
+    selectContainer.style.display = "block";
+  }
+
+  document.getElementById("subtituloTurma").textContent = "Selecione a turma acima para continuar.";
+  bloquearUpload(""); // limpa qualquer mensagem, mas mantém bloqueado até selecionar turma
+  bloquearUpload("Selecione uma turma para habilitar a importação.");
+}
+
+function selecionarTurma(id) {
+  turmaId = id || null;
+  const uploadBox = document.querySelector(".upload-box");
+
+  if (!turmaId) {
+    bloquearUpload("Selecione uma turma para habilitar a importação.");
+    document.getElementById("subtituloTurma").textContent = "Selecione a turma acima para continuar.";
+    return;
+  }
+
+  // Atualiza subtítulo com a turma escolhida
+  const sel = document.getElementById("turmaSelect");
+  const nomeTurma = sel.options[sel.selectedIndex].text;
+  document.getElementById("subtituloTurma").textContent = `Turma: ${nomeTurma}`;
+
+  // Habilita o upload
+  uploadBox.style.pointerEvents = "";
+  uploadBox.style.opacity = "";
+  document.getElementById("feedbackUpload").innerHTML = "";
+}
+
+function bloquearUpload(mensagem) {
+  const uploadBox = document.querySelector(".upload-box");
+  uploadBox.style.pointerEvents = "none";
+  uploadBox.style.opacity = "0.5";
+  if (mensagem) {
+    document.getElementById("feedbackUpload").innerHTML =
+      `<div class="alert alert-warning py-2">${mensagem}</div>`;
+  }
 }
 
 // ── Processamento do arquivo ──────────────────────────────────
 
 async function processarArquivo(event) {
+  if (!turmaId) {
+    alert("Selecione uma turma primeiro.");
+    event.target.value = "";
+    return;
+  }
+
   const file = event.target.files[0];
   if (!file) return;
 
@@ -67,208 +138,207 @@ async function processarArquivo(event) {
 
   const bimestre = document.getElementById("bimestreSelect").value;
 
-  // Lê o arquivo
-  const buffer = await file.arrayBuffer();
-  const workbook = XLSX.read(new Uint8Array(buffer), { type: "array" });
-  const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+  try {
+    const buffer = await file.arrayBuffer();
+    const workbook = XLSX.read(new Uint8Array(buffer), { type: "array" });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-  // 1. Encontrar linha do cabeçalho ("ALUNO")
-  let headerRowIndex = -1;
-  for (let i = 0; i < json.length; i++) {
-    if (compararTextos(String(json[i][0] ?? ""), "ALUNO")) {
-      headerRowIndex = i;
-      break;
+    // 1. Encontrar linha do cabeçalho ("ALUNO")
+    let headerRowIndex = -1;
+    for (let i = 0; i < json.length; i++) {
+      if (compararTextos(String(json[i][0] ?? ""), "ALUNO")) {
+        headerRowIndex = i;
+        break;
+      }
     }
-  }
+    if (headerRowIndex === -1) {
+      feedback.innerHTML = `<div class="alert alert-danger">Célula "ALUNO" não encontrada. Verifique se é um mapão válido.</div>`;
+      event.target.value = "";
+      return;
+    }
 
-  if (headerRowIndex === -1) {
-    feedback.innerHTML = `<div class="alert alert-danger">Não foi possível encontrar a célula "ALUNO" no arquivo.</div>`;
-    event.target.value = "";
-    return;
-  }
+    const headerRow = json[headerRowIndex];
+    const subHeader = json[headerRowIndex + 1] || [];
 
-  const headerRow  = json[headerRowIndex];
-  const subHeader  = json[headerRowIndex + 1] || [];
-
-  // 2. Para cada disciplina do professor, encontrar a coluna no mapão
-  // Busca as disciplinas da turma para usar como referência de nomes
-  // Agrupa por turma para evitar buscas repetidas
-  const turmasUnicas = [...new Set(minhasDisciplinas.map(d => d.turma_id))];
-  const discsPorTurma = {};
-  for (const turmaId of turmasUnicas) {
-    const { data } = await supabaseClient
+    // 2. Buscar TODAS as disciplinas da turma no banco
+    const { data: discsBanco } = await supabaseClient
       .from("turma_disciplinas")
       .select("disciplinas(id, nome)")
       .eq("turma_id", turmaId);
-    discsPorTurma[turmaId] = (data || []).filter(d => d.disciplinas).map(d => d.disciplinas.nome);
-  }
 
-  function matchDisciplina(nomeMapao, nomeBanco) {
-    const nm = normalizarTexto(nomeMapao);
-    const nb = normalizarTexto(nomeBanco);
-    return nb.startsWith(nm) || nm.startsWith(nb);
-  }
+    const todasDiscs = (discsBanco || [])
+      .filter(d => d.disciplinas)
+      .map(d => ({ id: d.disciplinas.id, nome: d.disciplinas.nome }));
 
-  function encontrarColuna(disciplinaNome, turmaId) {
-    // Descobre o nome alvo usando as disciplinas do banco como referência
-    const discsRef = discsPorTurma[turmaId] || [];
-    let disciplinaAlvo = disciplinaNome;
-    const match = discsRef.find(d => matchDisciplina(disciplinaNome, d) || matchDisciplina(d, disciplinaNome));
-    if (match) disciplinaAlvo = match;
+    if (todasDiscs.length === 0) {
+      feedback.innerHTML = `<div class="alert alert-warning">Nenhuma disciplina cadastrada para essa turma.</div>`;
+      event.target.value = "";
+      return;
+    }
 
-    // Encontra a coluna com melhor match (ignorando duplicatas de merge)
-    let discColIndex = -1;
-    let melhorMatch = 0;
-    let ultimaCelula = null;
+    // 3. Funções de matching (nomes truncados e merges do XLSX.js)
+    function matchDisciplina(nomeMapao, nomeBanco) {
+      const nm = normalizarTexto(nomeMapao);
+      const nb = normalizarTexto(nomeBanco);
+      return nb.startsWith(nm) || nm.startsWith(nb);
+    }
 
-    for (let j = 0; j < headerRow.length; j++) {
-      const cellNome = String(headerRow[j] ?? "").split("\n")[0].trim();
-      if (cellNome === ultimaCelula) continue;
-      ultimaCelula = cellNome;
-      if (!cellNome) continue;
+    function encontrarColunaDisc(disciplinaNome) {
+      let discColIndex = -1;
+      let melhorMatch  = 0;
+      let ultimaCelula = null;
 
-      const nm = normalizarTexto(cellNome);
-      const nd = normalizarTexto(disciplinaAlvo);
-      const prefixo = Math.min(nm.length, nd.length);
+      for (let j = 0; j < headerRow.length; j++) {
+        const cellNome = String(headerRow[j] ?? "").split("\n")[0].trim();
+        if (cellNome === ultimaCelula) continue;
+        ultimaCelula = cellNome;
+        if (!cellNome) continue;
 
-      if ((nd.startsWith(nm) || nm.startsWith(nd)) && prefixo > melhorMatch) {
-        melhorMatch = prefixo;
-        discColIndex = j;
+        const nm      = normalizarTexto(cellNome);
+        const nd      = normalizarTexto(disciplinaNome);
+        const prefixo = Math.min(nm.length, nd.length);
+
+        if ((nd.startsWith(nm) || nm.startsWith(nd)) && prefixo > melhorMatch) {
+          melhorMatch  = prefixo;
+          discColIndex = j;
+        }
+      }
+      if (discColIndex === -1) return null;
+
+      // Range do merge para localizar M e F no subheader
+      let endColIndex = discColIndex;
+      if (sheet["!merges"]) {
+        const merge = sheet["!merges"].find(
+          m => m.s.r === headerRowIndex && m.s.c === discColIndex
+        );
+        if (merge) endColIndex = merge.e.c;
+      }
+
+      let mediaCol  = -1;
+      let faltasCol = -1;
+      for (let c = discColIndex; c <= endColIndex; c++) {
+        if (compararTextos(String(subHeader[c] ?? ""), "M") && mediaCol  === -1) mediaCol  = c;
+        if (compararTextos(String(subHeader[c] ?? ""), "F") && mediaCol  !== -1 && faltasCol === -1) faltasCol = c;
+      }
+      if (mediaCol  === -1) return null;
+      if (faltasCol === -1) faltasCol = mediaCol + 1;
+
+      return { discColIndex, mediaCol, faltasCol };
+    }
+
+    // 4. Mapear todas as disciplinas → colunas do mapão
+    disciplinasOrdenadas = [];
+    mapaDiscsGlobal = {};
+
+    for (const disc of todasDiscs) {
+      const cols = encontrarColunaDisc(disc.nome);
+      if (cols) {
+        mapaDiscsGlobal[disc.id] = { ...cols, disciplina_nome: disc.nome };
+        disciplinasOrdenadas.push(disc.id);
       }
     }
 
-    if (discColIndex === -1) return null;
+    // Ordenar pela posição da coluna no mapão
+    disciplinasOrdenadas.sort((a, b) =>
+      mapaDiscsGlobal[a].discColIndex - mapaDiscsGlobal[b].discColIndex
+    );
 
-    // Encontra a coluna M (média) e F (faltas) no subheader
-    // Determina o range do merge da disciplina
-    let endColIndex = discColIndex;
-    if (sheet["!merges"]) {
-      const merge = sheet["!merges"].find(m => m.s.r === headerRowIndex && m.s.c === discColIndex);
-      if (merge) endColIndex = merge.e.c;
+    if (disciplinasOrdenadas.length === 0) {
+      feedback.innerHTML = `<div class="alert alert-warning">Nenhuma disciplina da turma foi encontrada no arquivo. Verifique se o mapão é desta turma.</div>`;
+      event.target.value = "";
+      return;
     }
 
-    let mediaCol  = -1;
-    let faltasCol = -1;
+    // 5. Buscar alunos da turma no banco
+    const { data: alunos } = await supabaseClient
+      .from("alunos")
+      .select("id, nome, numero_chamada")
+      .eq("turma_id", turmaId)
+      .order("numero_chamada", { ascending: true, nullsFirst: false })
+      .order("nome", { ascending: true });
 
-    for (let c = discColIndex; c <= endColIndex; c++) {
-      if (compararTextos(String(subHeader[c] ?? ""), "M") && mediaCol  === -1) mediaCol  = c;
-      if (compararTextos(String(subHeader[c] ?? ""), "F") && mediaCol  !== -1 && faltasCol === -1) faltasCol = c;
+    if (!alunos || alunos.length === 0) {
+      feedback.innerHTML = `<div class="alert alert-warning">Nenhum aluno cadastrado para essa turma.</div>`;
+      event.target.value = "";
+      return;
     }
 
-    if (mediaCol === -1) return null;
-    if (faltasCol === -1) faltasCol = mediaCol + 1;
+    // 6. Ler notas do mapão para cada aluno × cada disciplina
+    dadosImportados = [];
 
-    return { discColIndex, mediaCol, faltasCol };
-  }
+    for (const aluno of alunos) {
+      const discNotas = {};
 
-  // 3. Mapear disciplinas encontradas
-  disciplinasOrdenadas = [];
-  const mapaDiscs = {}; // disciplina_id → { mediaCol, faltasCol, disciplina_nome }
+      for (let r = headerRowIndex + 2; r < json.length; r++) {
+        const rowData   = json[r];
+        const nomeExcel = rowData[0];
+        if (!nomeExcel || typeof nomeExcel !== "string") continue;
+        if (!compararTextos(nomeExcel, aluno.nome)) continue;
 
-  for (const disc of minhasDisciplinas) {
-    const cols = encontrarColuna(disc.disciplina_nome, disc.turma_id);
-    if (cols) {
-      mapaDiscs[disc.disciplina_id] = { ...cols, disciplina_nome: disc.disciplina_nome, turma_nome: disc.turma_nome, turma_ano: disc.turma_ano, turma_id: disc.turma_id };
-      disciplinasOrdenadas.push(disc.disciplina_id);
-    }
-  }
+        for (const discId of disciplinasOrdenadas) {
+          const { mediaCol, faltasCol } = mapaDiscsGlobal[discId];
+          const mediaStr  = String(rowData[mediaCol]  ?? "").trim();
+          const faltasStr = String(rowData[faltasCol] ?? "").trim();
 
-  if (disciplinasOrdenadas.length === 0) {
-    feedback.innerHTML = `<div class="alert alert-warning">Nenhuma das suas disciplinas foi encontrada neste arquivo. Verifique se o mapão é da sua turma.</div>`;
-    event.target.value = "";
-    return;
-  }
+          const media   = (mediaStr  === "-" || mediaStr  === "") ? null
+            : parseFloat(mediaStr.replace(",",  ".")) || null;
+          const faltas  = (faltasStr === "-" || faltasStr === "") ? 0
+            : (parseFloat(faltasStr.replace(",", ".")) || 0);
 
-  // 4. Ler alunos da turma no banco (usa a primeira turma encontrada)
-  const turmaId = minhasDisciplinas[0].turma_id;
-  const { data: alunos } = await supabaseClient
-    .from("alunos")
-    .select("id, nome, numero_chamada")
-    .eq("turma_id", turmaId)
-    .order("numero_chamada", { ascending: true, nullsFirst: false })
-    .order("nome", { ascending: true });
-
-  if (!alunos || alunos.length === 0) {
-    feedback.innerHTML = `<div class="alert alert-warning">Nenhum aluno encontrado no banco para a turma.</div>`;
-    event.target.value = "";
-    return;
-  }
-
-  // 5. Ler notas do mapão para cada aluno
-  dadosImportados = [];
-
-  for (const aluno of alunos) {
-    const discNotas = {};
-
-    // Procurar o aluno no Excel comparando nomes
-    for (let r = headerRowIndex + 2; r < json.length; r++) {
-      const rowData = json[r];
-      const nomeExcel = rowData[0];
-      if (!nomeExcel || typeof nomeExcel !== "string") continue;
-      if (!compararTextos(nomeExcel, aluno.nome)) continue;
-
-      // Aluno encontrado — extrair notas de cada disciplina
-      for (const discId of disciplinasOrdenadas) {
-        const { mediaCol, faltasCol } = mapaDiscs[discId];
-        const rawMedia  = rowData[mediaCol];
-        const rawFaltas = rowData[faltasCol];
-
-        const mediaStr  = String(rawMedia  ?? "").trim();
-        const faltasStr = String(rawFaltas ?? "").trim();
-
-        // Média: "-" ou vazio → null (professor preenche manualmente)
-        const media = (mediaStr === "-" || mediaStr === "") ? null : parseFloat(mediaStr.replace(",", ".")) || null;
-
-        // Faltas: "-" ou vazio → 0 (sem falta registrada)
-        const faltasVal = (faltasStr === "-" || faltasStr === "") ? 0 : (parseFloat(faltasStr.replace(",", ".")) || 0);
-
-        discNotas[discId] = { media, faltas: faltasVal };
+          discNotas[discId] = { media, faltas };
+        }
+        break;
       }
-      break;
+
+      dadosImportados.push({
+        aluno_id:       aluno.id,
+        aluno_nome:     aluno.nome,
+        numero_chamada: aluno.numero_chamada,
+        bimestre,
+        disciplinas:    discNotas,
+      });
     }
 
-    dadosImportados.push({
-      aluno_id:       aluno.id,
-      aluno_nome:     aluno.nome,
-      numero_chamada: aluno.numero_chamada,
-      bimestre,
-      disciplinas: discNotas,
-    });
+    // 7. Mostrar prévia
+    montarPrevia(bimestre, file.name);
+    feedback.innerHTML = "";
+
+  } catch (err) {
+    console.error(err);
+    feedback.innerHTML = `<div class="alert alert-danger">Erro ao processar o arquivo: ${err.message}</div>`;
   }
 
-  // 6. Montar e exibir a prévia
-  montarPrevia(mapaDiscs, bimestre, file.name);
-  feedback.innerHTML = "";
   event.target.value = "";
 }
 
 // ── Prévia ────────────────────────────────────────────────────
 
-function montarPrevia(mapaDiscs, bimestre, nomeArquivo) {
-  // Título
-  const turmaRef = minhasDisciplinas[0];
-  document.getElementById("tituloPrevia").textContent =
-    `${turmaRef.turma_nome} - ${turmaRef.turma_ano} • ${bimestre}º Bimestre`;
+function montarPrevia(bimestre, nomeArquivo) {
+  const turmaTxt = document.getElementById("subtituloTurma").textContent.replace("Turma: ", "");
+  document.getElementById("tituloPrevia").textContent   = `${turmaTxt} • ${bimestre}º Bimestre`;
   document.getElementById("subtituloPrevia").textContent = `Arquivo: ${nomeArquivo}`;
 
-  // Legenda
-  const semNota = dadosImportados.reduce((acc, a) => {
-    return acc + disciplinasOrdenadas.filter(id => a.disciplinas[id]?.media === null).length;
-  }, 0);
+  const totalDiscs  = disciplinasOrdenadas.length;
+  const totalAlunos = dadosImportados.length;
+  const semNota = dadosImportados.reduce((acc, a) =>
+    acc + disciplinasOrdenadas.filter(id => a.disciplinas[id]?.media === null).length, 0
+  );
+  const comNota = (totalAlunos * totalDiscs) - semNota;
 
   document.getElementById("legendaImportacao").innerHTML = `
-    <span>✅ Com nota</span>
+    <span>✅ <strong>${comNota}</strong> notas importadas</span>
     <span class="cell-vazio">— Sem nota (preencher manualmente)</span>
-    ${semNota > 0 ? `<span class="text-warning fw-semibold">⚠️ ${semNota} campo(s) sem nota</span>` : ""}
+    ${semNota > 0
+      ? `<span class="text-warning fw-semibold ms-2">⚠️ ${semNota} média(s) sem nota</span>`
+      : `<span class="text-success fw-semibold ms-2">✔️ Todos os alunos com nota</span>`}
   `;
 
   // Cabeçalho
   const cabecalho = document.getElementById("cabecalhoPrevia");
-  let thDiscs = disciplinasOrdenadas.map(id => {
-    const d = mapaDiscs[id];
-    return `<th><div>${d.disciplina_nome}</div><div class="badge-disc">M &nbsp; F</div></th>`;
-  }).join("");
+  const thDiscs   = disciplinasOrdenadas.map(id =>
+    `<th><div>${mapaDiscsGlobal[id].disciplina_nome}</div><div class="badge-disc">Média / Faltas</div></th>`
+  ).join("");
   cabecalho.innerHTML = `
     <tr>
       <th style="width:40px">#</th>
@@ -282,12 +352,9 @@ function montarPrevia(mapaDiscs, bimestre, nomeArquivo) {
   corpo.innerHTML = dadosImportados.map(aluno => {
     const cells = disciplinasOrdenadas.map(id => {
       const n = aluno.disciplinas[id];
-      if (!n || n.media === null) {
-        return `<td class="cell-vazio">—</td>`;
-      }
+      if (!n || n.media === null) return `<td class="cell-vazio">—</td>`;
       return `<td class="cell-ok">${n.media} <span class="text-muted fw-normal">/ ${n.faltas}</span></td>`;
     }).join("");
-
     return `
       <tr>
         <td class="col-chamada">${aluno.numero_chamada ?? ""}</td>
@@ -297,7 +364,6 @@ function montarPrevia(mapaDiscs, bimestre, nomeArquivo) {
     `;
   }).join("");
 
-  // Mostrar prévia
   document.getElementById("areaUpload").style.display = "none";
   document.getElementById("areaPrevia").style.display  = "block";
 }
@@ -319,7 +385,7 @@ async function salvarTudo() {
     for (const aluno of dadosImportados) {
       for (const discId of disciplinasOrdenadas) {
         const n = aluno.disciplinas[discId];
-        if (!n || n.media === null) continue; // pula campos sem nota
+        if (!n || n.media === null) continue;
 
         registros.push({
           aluno_id:      aluno.aluno_id,
@@ -332,7 +398,7 @@ async function salvarTudo() {
     }
 
     if (registros.length === 0) {
-      alert("Nenhuma nota para salvar. Verifique se o mapão possui notas preenchidas.");
+      alert("Nenhuma nota para salvar. O mapão pode estar sem notas preenchidas.");
       return;
     }
 
@@ -347,7 +413,9 @@ async function salvarTudo() {
     }
 
     alert(`✅ ${registros.length} registros salvos com sucesso!`);
-    window.location.href = "dashboard-professor.html";
+    window.location.href = usuarioLogado.role === "coordenacao"
+      ? "dashboard-coordenacao.html"
+      : "dashboard-professor.html";
 
   } catch (err) {
     alert("Erro inesperado: " + err.message);
@@ -361,11 +429,12 @@ async function salvarTudo() {
 // ── Voltar ────────────────────────────────────────────────────
 
 function voltarUpload() {
-  dadosImportados = [];
+  dadosImportados      = [];
   disciplinasOrdenadas = [];
-  document.getElementById("areaPrevia").style.display  = "none";
-  document.getElementById("areaUpload").style.display  = "block";
-  document.getElementById("feedbackUpload").innerHTML  = "";
-  document.getElementById("cabecalhoPrevia").innerHTML = "";
-  document.getElementById("corpoPrevia").innerHTML     = "";
+  mapaDiscsGlobal      = {};
+  document.getElementById("areaPrevia").style.display    = "none";
+  document.getElementById("areaUpload").style.display    = "block";
+  document.getElementById("feedbackUpload").innerHTML    = "";
+  document.getElementById("cabecalhoPrevia").innerHTML   = "";
+  document.getElementById("corpoPrevia").innerHTML       = "";
 }
