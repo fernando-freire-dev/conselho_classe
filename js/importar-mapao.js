@@ -117,6 +117,29 @@ function aplicarPreSelecaoCoordenacao() {
   localStorage.removeItem("mapao_coord_bimestre");
 }
 
+// Formata a nota e falta dos alunos em atenção
+function getClasseIndicadorNF(media, faltas) {
+  const notaBaixa = media !== null && media !== undefined && media !== "" && Number(media) < 5;
+  const faltaAlta = Number(faltas || 0) > 10;
+
+  if (notaBaixa && faltaAlta) return "nf-critico";
+  if (notaBaixa) return "nf-nota-baixa";
+  if (faltaAlta) return "nf-falta-alta";
+  return "nf-normal";
+}
+
+function formatarValorNF(media, faltas) {
+  if (media === null || media === undefined || media === "") {
+    return `<span class="nf-sem-nota">—</span>`;
+  }
+
+  const mediaFmt = Number(media).toFixed(1).replace(".", ",");
+  const faltasFmt = Number(faltas || 0);
+  const classe = getClasseIndicadorNF(media, faltas);
+
+  return `<span class="nf-badge ${classe}">${mediaFmt} / ${faltasFmt}</span>`;
+}
+
 function selecionarTurma(id) {
   turmaId = id || null;
   const uploadBox = document.querySelector(".upload-box");
