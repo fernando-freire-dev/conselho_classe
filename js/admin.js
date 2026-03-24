@@ -666,10 +666,11 @@ async function salvarApelido(discId) {
   }
 
   if (!data || data.length === 0) {
-    alert("O sistema tentou salvar, mas nenhuma disciplina foi atualizada. Verifique a policy/RLS da tabela disciplinas.");
-    console.log("Nenhuma linha atualizada para a disciplina:", discId);
+    alert("Nenhuma disciplina foi atualizada.");
     return;
   }
+
+  console.log("Disciplina atualizada:", data[0]);
 
   const linha = input.closest(".d-flex");
   const btn = linha?.querySelector("button");
@@ -685,8 +686,6 @@ async function salvarApelido(discId) {
     btn.classList.remove("btn-success");
     btn.classList.add("btn-outline-primary");
   }, 2000);
-
-  console.log("Disciplina atualizada:", data[0]);
 }
 
 //Carregar disciplinas no Select
