@@ -664,12 +664,17 @@ async function salvarApelido(discId) {
     return;
   }
 
-  // Feedback visual sem alert
-  const btn = input.nextElementSibling;
+  // pega o botão dentro da mesma linha
+  const linha = input.closest(".d-flex");
+  const btn = linha?.querySelector("button");
+
+  if (!btn) return;
+
   const originalText = btn.textContent;
   btn.textContent = "✅ Salvo";
   btn.classList.remove("btn-outline-primary");
   btn.classList.add("btn-success");
+
   setTimeout(() => {
     btn.textContent = originalText;
     btn.classList.remove("btn-success");
