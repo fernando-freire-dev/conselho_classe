@@ -653,10 +653,11 @@ async function salvarApelido(discId) {
 
   const apelido = input.value.trim() || null;
 
-  const { error } = await supabaseClient
+  const { data, error } = await supabaseClient
     .from("disciplinas")
     .update({ apelido })
-    .eq("id", discId);
+    .eq("id", discId)
+    .select("id, nome, apelido");
 
   if (error) {
     alert("Erro ao salvar apelido: " + error.message);
@@ -664,10 +665,14 @@ async function salvarApelido(discId) {
     return;
   }
 
-  // pega o botão dentro da mesma linha
+  if (!data || data.length === 0) {
+    alert("O sistema tentou salvar, mas nenhuma disciplina foi atualizada. Verifique a policy/RLS da tabela disciplinas.");
+    console.log("Nenhuma linha atualizada para a disciplina:", discId);
+    return;
+  }
+
   const linha = input.closest(".d-flex");
   const btn = linha?.querySelector("button");
-
   if (!btn) return;
 
   const originalText = btn.textContent;
@@ -680,6 +685,8 @@ async function salvarApelido(discId) {
     btn.classList.remove("btn-success");
     btn.classList.add("btn-outline-primary");
   }, 2000);
+
+  console.log("Disciplina atualizada:", data[0]);
 }
 
 //Carregar disciplinas no Select
