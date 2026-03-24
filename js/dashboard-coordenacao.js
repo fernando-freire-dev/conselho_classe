@@ -8,6 +8,30 @@ document.addEventListener("DOMContentLoaded", async () => {
   popularFiltroTurmaNotasFaltas();
 });
 
+// Função para auxiliar no destaque de notas vermelhas e muitas faltas
+function getClasseIndicadorNF(media, faltas) {
+  const notaBaixa = media !== null && media !== undefined && media !== "" && Number(media) < 5;
+  const faltaAlta = Number(faltas || 0) > 10;
+
+  if (notaBaixa && faltaAlta) return "table-warning fw-bold";
+  if (notaBaixa) return "table-danger fw-bold";
+  if (faltaAlta) return "table-warning fw-bold";
+  return "";
+}
+
+function formatarValorNF(media, faltas) {
+  if (media === null || media === undefined || media === "") {
+    return `<span class="text-muted">—</span>`;
+  }
+
+  const mediaFmt = Number(media).toFixed(1).replace(".", ",");
+  const faltasFmt = Number(faltas || 0);
+  const classe = getClasseIndicadorNF(media, faltas);
+
+  return `<span class="${classe} px-2 py-1 rounded">${mediaFmt} / ${faltasFmt}</span>`;
+}
+//Fim das modificação para notas e faltas
+
 async function checkCoordenacao() {
   const { data: { user } } = await supabaseClient.auth.getUser();
 
@@ -633,7 +657,11 @@ function renderPreviewNotasFaltasCoordenacao({ turmaInfo, bimestre, alunos, disc
       }
 
       totalComNota++;
-      return `<td class="text-center"><strong>${registro.media}</strong> <span class="text-muted">/ ${registro.faltas ?? 0}</span></td>`;
+      return `
+          <td class="text-center">
+            ${formatarValorNF(registro.media, registro.faltas)}
+          </td>
+        `;
     }).join("");
 
     return `
