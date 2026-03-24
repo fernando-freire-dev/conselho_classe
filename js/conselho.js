@@ -19,6 +19,28 @@ function lerFaz(jsonb) {
   return true;
 }
 
+/*Função para destacar as notas vermelhas e excesso de faltas*/
+function getClasseNota(media) {
+  if (media === null || media === undefined || media === "") return "";
+  return Number(media) < 5 ? "table-danger fw-bold" : "";
+}
+
+function getClasseFaltas(faltas) {
+  if (faltas === null || faltas === undefined || faltas === "") return "";
+  return Number(faltas) > 10 ? "table-warning fw-bold" : "";
+}
+
+function formatarMedia(media) {
+  if (media === null || media === undefined || media === "") return "-";
+  return Number(media).toFixed(1).replace(".", ",");
+}
+
+function formatarFaltas(faltas) {
+  if (faltas === null || faltas === undefined || faltas === "") return "-";
+  return String(faltas);
+}
+/*Fim da Função*/
+
 // Cache para o modal de notas
 let cacheDisciplinas = [];
 let cacheNotasPorAluno = {};
@@ -616,8 +638,8 @@ function abrirModalNotas(alunoId) {
       html += `
         <tr>
           <td>${r.disciplina_id}</td>
-          <td class="text-center">${(r?.media ?? "-")}</td>
-          <td class="text-center">${(r?.faltas ?? "-")}</td>
+          <td class="text-center ${getClasseNota(media)}">${formatarMedia(media)}</td>
+          <td class="text-center ${getClasseFaltas(faltas)}">${formatarFaltas(faltas)}</td>
         </tr>
       `;
     });
