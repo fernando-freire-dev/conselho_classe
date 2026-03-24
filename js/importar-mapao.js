@@ -18,6 +18,30 @@ document.addEventListener("DOMContentLoaded", async () => {
     .addEventListener("change", processarArquivo);
 });
 
+/*Funçao para destacar as notas vermelhas e muitas faltas*/
+function getClasseIndicadorNF(media, faltas) {
+  const notaBaixa = media !== null && media !== undefined && media !== "" && Number(media) < 5;
+  const faltaAlta = Number(faltas || 0) > 10;
+
+  if (notaBaixa && faltaAlta) return "table-warning fw-bold";
+  if (notaBaixa) return "table-danger fw-bold";
+  if (faltaAlta) return "table-warning fw-bold";
+  return "";
+}
+
+function formatarValorNF(media, faltas) {
+  if (media === null || media === undefined || media === "") {
+    return `<span class="text-muted">—</span>`;
+  }
+
+  const mediaFmt = Number(media).toFixed(1).replace(".", ",");
+  const faltasFmt = Number(faltas || 0);
+  const classe = getClasseIndicadorNF(media, faltas);
+
+  return `<span class="${classe} px-2 py-1 rounded">${mediaFmt} / ${faltasFmt}</span>`;
+}
+/*Fim da Função de destaque*/
+
 async function verificarUsuario() {
   const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) { window.location.href = "index.html"; return; }
@@ -410,7 +434,7 @@ function montarPrevia(bimestre, nomeArquivo) {
     const cells = disciplinasOrdenadas.map(id => {
       const n = aluno.disciplinas[id];
       if (!n || n.media === null) return `<td class="cell-vazio">—</td>`;
-      return `<td class="cell-ok">${n.media} <span class="text-muted fw-normal">/ ${n.faltas}</span></td>`;
+      return `<td class="cell-ok">${formatarValorNF(media)} <span class="text-muted fw-normal">/ ${formatarValorNF(faltas)}</span></td>`;
     }).join("");
     return `
       <tr>
