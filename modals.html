@@ -150,20 +150,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <div class="row g-2 mb-4 align-items-end">
-          <div class="col">
-            <label class="form-label small fw-bold">Vincular Nova Disciplina</label>
-            <select id="selectNovaDisciplina" class="form-select">
-              <option value="">Carregando disciplinas...</option>
-            </select>
-          </div>
-          <div class="col-auto">
-            <button class="btn btn-success" onclick="vincularNovaDisciplina()">
-              <i class="bi bi-plus-lg"></i> Adicionar
-            </button>
-          </div>
-        </div>
-
+        
         <div class="d-flex justify-content-between align-items-center mb-2">
           <h6 class="m-0">Disciplinas Cadastradas</h6>
           <span class="badge bg-primary" id="totalDisciplinasBadge">0</span>
@@ -181,6 +168,20 @@
               </tbody>
           </table>
         </div>
+
+        <div class="row g-2 mb-4 align-items-end">
+          <div class="col">
+            <label class="form-label small fw-bold">Vincular Nova Disciplina</label>
+            <select id="selectNovaDisciplina" class="form-select">
+              <option value="">Carregando disciplinas...</option>
+            </select>
+          </div>
+          <div class="col-auto">
+            <button class="btn btn-success" onclick="vincularNovaDisciplina()">
+              <i class="bi bi-plus-lg"></i> Adicionar
+            </button>
+           </div>
+          </div>
       </div>
     </div>
   </div>
