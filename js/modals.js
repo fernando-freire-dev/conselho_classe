@@ -402,43 +402,41 @@ async function carregarSelectDisciplinas() {
 async function listarDisciplinasDaTurma() {
   const corpo = document.getElementById("listaDisciplinasCorpo");
   const badge = document.getElementById("totalDisciplinasBadge");
+  if(!corpo) return;
+
   corpo.innerHTML = '<tr><td colspan="2" class="text-center text-muted py-3">Carregando...</td></tr>';
 
+  // CONSULTA ATUALIZADA: Usando turma_disciplina
   const { data, error } = await supabaseClient
-    .from("professor_disciplina_turma")
-    .select(`id, disciplina_id, disciplinas ( nome )`)
+    .from("turma_disciplina") // <--- Mudamos aqui
+    .select(`
+      id, 
+      disciplina_id, 
+      disciplinas ( nome )
+    `)
     .eq("turma_id", turmaIdAtiva);
 
   if (error) {
-    corpo.innerHTML = '<tr><td colspan="2" class="text-center text-danger">Erro ao carregar.</td></tr>';
+    console.error("Erro Supabase:", error);
+    corpo.innerHTML = '<tr><td colspan="2" class="text-center text-danger">Erro ao carregar dados.</td></tr>';
     return;
   }
 
-  // Remove duplicatas de nomes de disciplinas para visualização limpa
-  const uniqueItems = [];
-  const map = new Map();
-  for (const item of data) {
-    if (!map.has(item.disciplina_id)) {
-      map.set(item.disciplina_id, true);
-      uniqueItems.push(item);
-    }
-  }
-
-  badge.innerText = uniqueItems.length;
+  badge.innerText = data.length;
   corpo.innerHTML = "";
 
-  if (uniqueItems.length === 0) {
-    corpo.innerHTML = '<tr><td colspan="2" class="text-center text-muted py-3">Nenhuma disciplina vinculada.</td></tr>';
+  if (data.length === 0) {
+    corpo.innerHTML = '<tr><td colspan="2" class="text-center text-muted py-3">Nenhuma disciplina na grade desta turma.</td></tr>';
     return;
   }
 
-  uniqueItems.forEach(item => {
+  data.forEach(item => {
     corpo.innerHTML += `
       <tr>
         <td class="align-middle fw-medium">${item.disciplinas?.nome || 'Sem nome'}</td>
         <td class="text-end">
           <button class="btn btn-sm text-danger" onclick="removerVinculoDisciplina('${item.id}')">
-            Excluir
+            <i class="bi bi-trash"></i> Remover
           </button>
         </td>
       </tr>
