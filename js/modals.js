@@ -446,14 +446,17 @@ async function listarDisciplinasDaTurma() {
 
 async function vincularNovaDisciplina() {
   const discId = document.getElementById("selectNovaDisciplina").value;
-  if (!discId) return alert("Selecione uma disciplina para adicionar.");
+  if (!discId) return alert("Selecione uma disciplina.");
 
   const { error } = await supabaseClient
-    .from("professor_disciplina_turma")
-    .insert([{ turma_id: turmaIdAtiva, disciplina_id: discId }]);
+    .from("turma_disciplinas") // <--- ajuste aqui também
+    .insert([{ 
+      turma_id: turmaIdAtiva, 
+      disciplina_id: discId 
+    }]);
 
   if (error) {
-    alert("Erro ao vincular: " + error.message);
+    alert("Erro ao salvar: " + error.message);
   } else {
     listarDisciplinasDaTurma();
   }
