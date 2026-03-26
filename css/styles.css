@@ -8,6 +8,16 @@
   --app-border:#e5e7eb;
   --app-head:#f8fafc;
   --app-row-hover:#f1f7ff;
+
+  --danger-bg:#f8d7da;
+  --danger-border:#dc3545;
+  --danger-text:#842029;
+
+  --warning-bg:#fff3cd;
+  --warning-border:#ffc107;
+  --warning-text:#664d03;
+  --warning-shadow:rgba(255, 193, 7, 0.25);
+  --danger-shadow:rgba(220, 53, 69, 0.25);
 }
 
 body.app-body{
@@ -131,7 +141,54 @@ body.app-body{
   background: linear-gradient(135deg, #198754, #157347);
 }
 
-/* CONSELHO (LARANJA/AMARELO MAIS FORTE) */
+/* CONSELHO (LARANJA) */
 .btn-conselho {
   background: linear-gradient(135deg, #fd7e14, #e8590c);
+}
+
+/* ============================================
+   DESTAQUES VISUAIS
+   ============================================ */
+
+/* NOTAS ABAIXO DE 5 - tudo em vermelho */
+.nota-baixa,
+.nota-muito-baixa {
+  background-color: var(--danger-bg) !important;
+  border-color: var(--danger-border) !important;
+  font-weight: 700 !important;
+  color: var(--danger-text) !important;
+}
+
+.nota-baixa:focus,
+.nota-muito-baixa:focus {
+  background-color: var(--danger-bg) !important;
+  border-color: var(--danger-border) !important;
+  box-shadow: 0 0 0 0.2rem var(--danger-shadow) !important;
+}
+
+.nota-baixa-cell,
+.nota-muito-baixa-cell {
+  background-color: var(--danger-bg) !important;
+  font-weight: 700 !important;
+  color: var(--danger-text) !important;
+}
+
+/* FALTAS ALTAS - amarelo */
+.falta-alta {
+  background-color: var(--warning-bg) !important;
+  border-color: var(--warning-border) !important;
+  font-weight: 700 !important;
+  color: var(--warning-text) !important;
+}
+
+.falta-alta:focus {
+  background-color: var(--warning-bg) !important;
+  border-color: var(--warning-border) !important;
+  box-shadow: 0 0 0 0.2rem var(--warning-shadow) !important;
+}
+
+.falta-alta-cell {
+  background-color: var(--warning-bg) !important;
+  font-weight: 700 !important;
+  color: var(--warning-text) !important;
 }
