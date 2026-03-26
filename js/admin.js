@@ -1061,6 +1061,66 @@ document.addEventListener("DOMContentLoaded", () => {
   // ... outras funções ...
   carregarMatrizVinculos();
 });*/
+/*Carrega as disciplinas vinculadas a uma turma*/
+async function carregarMatrizVinculos() {
+  const corpoTabela = document.getElementById("corpoMatrizVinculos");
+  if (!corpoTabela) return;
+
+  corpoTabela.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-3">Carregando grade curricular...</td></tr>`;
+
+  try {
+    // 1. Busca todas as turmas
+    const { data: turmas, error: errT } = await supabaseClient
+      .from("turmas")
+      .select("id, nome, ano, ensino")
+      .order("nome");
+
+    if (errT) throw errT;
+
+    // 2. Busca os vínculos da tabela correta: turma_disciplina
+    // Puxando o nome da disciplina via JOIN
+    const { data: vinculos, error: errV } = await supabaseClient
+      .from("turma_disciplina")
+      .select(`
+        turma_id,
+        disciplinas ( nome )
+      `);
+
+    if (errV) throw errV;
+
+    corpoTabela.innerHTML = ""; 
+
+    turmas.forEach(turma => {
+      // Filtra as disciplinas vinculadas a esta turma específica
+      const discNomes = vinculos
+        .filter(v => v.turma_id === turma.id)
+        .map(v => v.disciplinas?.nome)
+        .filter(Boolean);
+
+      const unicas = [...new Set(discNomes)].sort();
+      
+      const badges = unicas.length > 0 
+        ? unicas.map(d => `<span class="badge bg-light text-primary border me-1 mb-1">${d}</span>`).join('')
+        : `<span class="text-danger small fw-bold">⚠️ NENHUMA DISCIPLINA VINCULADA</span>`;
+
+      corpoTabela.innerHTML += `
+        <tr>
+          <td class="align-middle"><strong>${turma.nome}</strong></td>
+          <td class="align-middle"><small class="text-muted">${turma.ensino || ''} - ${turma.ano || ''}</small></td>
+          <td class="align-middle">${badges}</td>
+          <td class="text-center align-middle">
+            <span class="badge ${unicas.length > 0 ? 'bg-primary' : 'bg-danger'}">
+              ${unicas.length}
+            </span>
+          </td>
+        </tr>`;
+    });
+
+  } catch (error) {
+    console.error("Erro na matriz:", error);
+    corpoTabela.innerHTML = `<tr><td colspan="4" class="text-center text-danger">Erro ao carregar dados: ${error.message}</td></tr>`;
+  }
+}
 
 document.addEventListener("click", function (e) {
   const input = document.getElementById("filtro_professor_vinculo");
