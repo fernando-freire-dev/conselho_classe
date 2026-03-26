@@ -1052,6 +1052,76 @@ async function loadFiltroTurmasVinculo() {
   });
 }
 
+//Função para trazer os nomes das disciplinas vinculadas a uma turma
+async function carregarMatrizVinculos() {
+  const corpo = document.getElementById("corpoMatrizVinculos");
+  corpo.innerHTML = `<tr><td colspan="3" class="text-center text-muted">Carregando dados do banco...</td></tr>`;
+
+  try {
+    // 1. Buscamos todas as turmas
+    const { data: turmas, error: errT } = await supabaseClient
+      .from("turmas")
+      .select("id, nome, ano")
+      .order("nome");
+
+    if (errT) throw errT;
+
+    // 2. Buscamos os vínculos (trazendo o nome da disciplina associada)
+    // Ajuste o nome da tabela 'professor_disciplina_turma' se for diferente no seu banco
+    const { data: vinculos, error: errV } = await supabaseClient
+      .from("professor_disciplina_turma")
+      .select(`
+        turma_id,
+        disciplinas ( nome )
+      `);
+
+    if (errV) throw errV;
+
+    corpo.innerHTML = ""; // Limpa o loading
+
+    turmas.forEach(turma => {
+      // Filtra as disciplinas dessa turma e extrai apenas o nome
+      const listaNomes = vinculos
+        .filter(v => v.turma_id === turma.id)
+        .map(v => v.disciplinas?.nome)
+        .filter(Boolean); // Remove nulos
+
+      // Remove duplicatas (caso 2 professores dividam a mesma disciplina)
+      const disciplinasUnicas = [...new Set(listaNomes)].sort();
+
+      // Gera os Badges coloridos
+      const badges = disciplinasUnicas.length > 0
+        ? disciplinasUnicas.map(d => `<span class="badge bg-light text-primary border me-1 mb-1">${d}</span>`).join('')
+        : `<span class="text-danger small fw-bold">⚠️ NENHUMA DISCIPLINA VINCULADA</span>`;
+
+      corpo.innerHTML += `
+        <tr>
+          <td>
+            <strong>${turma.nome}</strong><br>
+            <small class="text-muted">${turma.ano || ''}</small>
+          </td>
+          <td>${badges}</td>
+          <td class="text-center">
+            <span class="badge ${disciplinasUnicas.length > 0 ? 'bg-primary' : 'bg-danger'}">
+              ${disciplinasUnicas.length}
+            </span>
+          </td>
+        </tr>
+      `;
+    });
+
+  } catch (error) {
+    console.error("Erro na matriz:", error);
+    corpo.innerHTML = `<tr><td colspan="3" class="text-center text-danger">Erro ao carregar matriz de vínculos.</td></tr>`;
+  }
+}
+
+// Chamar no carregamento da página (no final do DOMContentLoaded existente)
+document.addEventListener("DOMContentLoaded", () => {
+  // ... outras funções ...
+  carregarMatrizVinculos();
+});
+
 document.addEventListener("click", function (e) {
   const input = document.getElementById("filtro_professor_vinculo");
   const lista = document.getElementById("lista_sugestoes_professor");
