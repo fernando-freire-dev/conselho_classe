@@ -408,7 +408,7 @@ async function listarDisciplinasDaTurma() {
 
   // CONSULTA ATUALIZADA: Usando turma_disciplina
   const { data, error } = await supabaseClient
-    .from("turma_disciplina") // <--- Mudamos aqui
+    .from("turma_disciplinas") // <--- Mudamos aqui
     .select(`
       id, 
       disciplina_id, 
