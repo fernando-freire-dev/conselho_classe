@@ -141,5 +141,49 @@
   </div>
 </div>
 
+<!-- ── Modal para listar as disciplinas vinculadas a uma turma, vai funcionar ao apertar o botão "Disciplinas" no menu turmas ──────── -->
+<div class="modal fade" id="modalDisciplinasTurma" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">📚 Disciplinas: <span id="nomeTurmaModal" class="text-primary"></span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-2 mb-4 align-items-end">
+          <div class="col">
+            <label class="form-label small fw-bold">Vincular Nova Disciplina</label>
+            <select id="selectNovaDisciplina" class="form-select">
+              <option value="">Carregando disciplinas...</option>
+            </select>
+          </div>
+          <div class="col-auto">
+            <button class="btn btn-success" onclick="vincularNovaDisciplina()">
+              <i class="bi bi-plus-lg"></i> Adicionar
+            </button>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="m-0">Disciplinas Cadastradas</h6>
+          <span class="badge bg-primary" id="totalDisciplinasBadge">0</span>
+        </div>
+
+        <div class="table-responsive border rounded" style="max-height: 350px;">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Nome da Disciplina</th>
+                <th class="text-end">Ação</th>
+              </tr>
+            </thead>
+            <tbody id="listaDisciplinasCorpo">
+              </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ── Adicione novos modais globais abaixo desta linha ──────── -->
