@@ -86,6 +86,11 @@ async function carregarAlunos() {
       </tr>
     `;
   });
+  
+  // ⭐ NOVO: Aplicar destaque nas notas após carregar
+  setTimeout(() => {
+    destacarTodasNotas();
+  }, 100);
 }
 
 async function salvarNotas() {
@@ -280,56 +285,70 @@ async function processarMapao(event) {
       }
 
       // 5. Preencher os inputs com as notas e faltas encontradas
-      let notasPreenchidas = 0;
-      const rowsHtml = document.querySelectorAll("#corpoTabela tr");
-
-      for (let r = headerRowIndex + 2; r < json.length; r++) {
-        const rowData = json[r];
-        const nomeExcel = rowData[alunoColIndex];
-
-        if (nomeExcel && typeof nomeExcel === "string") {
-          rowsHtml.forEach(tr => {
-            const nomeHtml = tr.querySelector(".col-aluno")?.innerText;
-            const inputMedia = tr.querySelector(".media");
-            const inputFaltas = tr.querySelector(".faltas");
-
-            if (nomeHtml && inputMedia && compararTextos(nomeHtml, nomeExcel)) {
-
-              // Média
-              const notaExcel = rowData[mediaColIndex];
-              if (notaExcel !== undefined && notaExcel !== null && notaExcel !== "") {
-                const notaFormatada = String(notaExcel).replace(",", ".");
-                const valorFloat = parseFloat(notaFormatada);
-                if (!isNaN(valorFloat)) {
-                  inputMedia.value = valorFloat;
-                  notasPreenchidas++;
-                }
-              }
-
-              // Faltas — valor "-" é tratado como 0
-              if (inputFaltas && faltasColIndex !== -1) {
-                const faltaExcel = rowData[faltasColIndex];
-                const faltaStr = String(faltaExcel ?? "").trim();
-                if (faltaStr === "-" || faltaStr === "") {
-                  inputFaltas.value = 0;
-                } else {
-                  const faltaFormatada = faltaStr.replace(",", ".");
-                  const faltaFloat = parseFloat(faltaFormatada);
-                  if (!isNaN(faltaFloat)) {
-                    inputFaltas.value = faltaFloat;
-                  }
-                }
-              }
-            }
-          });
-        }
-      }
-
-      if (notasPreenchidas > 0) {
-        alert(`Sucesso! ${notasPreenchidas} notas e faltas foram importadas do Mapão.`);
-      } else {
-        alert("Nenhuma nota foi preenchida. Verifique se os nomes dos alunos correspondem.");
-      }
+		let notasPreenchidas = 0;
+		const rowsHtml = document.querySelectorAll("#corpoTabela tr");
+		
+		for (let r = headerRowIndex + 2; r < json.length; r++) {
+		  const rowData = json[r];
+		  const nomeExcel = rowData[alunoColIndex];
+		
+		  if (nomeExcel && typeof nomeExcel === "string") {
+		    rowsHtml.forEach(tr => {
+		      const nomeHtml = tr.querySelector(".col-aluno")?.innerText;
+		      const inputMedia = tr.querySelector(".media");
+		      const inputFaltas = tr.querySelector(".faltas");
+		
+		      if (nomeHtml && inputMedia && compararTextos(nomeHtml, nomeExcel)) {
+		
+		        // Média
+		        const notaExcel = rowData[mediaColIndex];
+		        if (notaExcel !== undefined && notaExcel !== null && notaExcel !== "") {
+		          const notaFormatada = String(notaExcel).replace(",", ".");
+		          const valorFloat = parseFloat(notaFormatada);
+		
+		          if (!isNaN(valorFloat)) {
+		            inputMedia.value = valorFloat;
+		            aplicarDestaqueNota(inputMedia, valorFloat);
+		            notasPreenchidas++;
+		          }
+		        }
+		
+		        // Faltas
+		        if (inputFaltas && faltasColIndex !== -1) {
+		          const faltaExcel = rowData[faltasColIndex];
+		          const faltaStr = String(faltaExcel ?? "").trim();
+		
+		          if (faltaStr === "-" || faltaStr === "") {
+		            inputFaltas.value = 0;
+		          } else {
+		            const faltaFormatada = faltaStr.replace(",", ".");
+		            const faltaFloat = parseFloat(faltaFormatada);
+		
+		            if (!isNaN(faltaFloat)) {
+		              inputFaltas.value = faltaFloat;
+		              aplicarDestaqueFalta(inputFaltas, faltaFloat);
+		            }
+		          }
+		        }
+		      }
+		    });
+		  }
+		}
+		
+		if (notasPreenchidas > 0) {
+		  alert(`Sucesso! ${notasPreenchidas} notas e faltas foram importadas do Mapão.`);
+		
+		  const contagem = contarNotasBaixas();
+		
+		  if (contagem.total > 0) {
+		    alert(
+		      `⚠️ Atenção: ${contagem.total} aluno(s) com nota abaixo de 5!`
+		    );
+		  }
+		
+		} else {
+		  alert("Nenhuma nota foi preenchida. Verifique se os nomes dos alunos correspondem.");
+		}
 
     } catch (err) {
       console.error(err);

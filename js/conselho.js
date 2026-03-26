@@ -41,10 +41,18 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // Modal de Notas (Bootstrap)
-  const modalEl = document.getElementById("modalNotas");
+  function inicializarModalNotas() {
+	  const modalEl = document.getElementById("modalNotas");
+	  if (modalEl && window.bootstrap) {
+		modalNotasInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+	  }
+	}
+
+	document.addEventListener("modalsLoaded", inicializarModalNotas);
+  /*const modalEl = document.getElementById("modalNotas");
   if (modalEl && window.bootstrap) {
     modalNotasInstance = new bootstrap.Modal(modalEl);
-  }
+  }	Antigo */
 
   const btnMarcarTodos = document.getElementById("btnMarcarTodosConcluido");
   if (btnMarcarTodos) {
@@ -120,6 +128,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (alunoId) abrirModalNotas(alunoId);
     });
   }
+  inicializarModalNotas();
 });
 
 function atualizarStatusLinha(row) {
@@ -575,8 +584,13 @@ function abrirModalNotas(alunoId) {
   const corpoEl = document.getElementById("modalNotasCorpo");
 
   if (!modalEl || !corpoEl) {
-    alert("Modal de notas não encontrado no HTML.");
+    console.warn("Modal de notas ainda não carregado no DOM.");
+    alert("Os modais ainda estão carregando. Tente novamente em alguns segundos.");
     return;
+  }
+
+  if (!modalNotasInstance && window.bootstrap) {
+    modalNotasInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
   }
 
   const linha = document.querySelector(`tr[data-aluno-id="${alunoId}"]`);
@@ -599,30 +613,60 @@ function abrirModalNotas(alunoId) {
         </thead>
         <tbody>
   `;
-
+  
+  //Novo Bloco de Geração de modal das notas
   (cacheDisciplinas || []).forEach(d => {
     const r = mapPorDisc.get(d.id);
+    const media = r?.media ?? "-";
+    const faltas = r?.faltas ?? "-";
+    
+    // ⭐ NOVO: Determinar classe de destaque para a média
+    let mediaClass = "";
+    if (media !== "-") {
+      const notaNum = parseFloat(media);
+      if (!isNaN(notaNum)) {
+        if (notaNum < 5) {
+          mediaClass = "nota-baixa-cell";
+        }
+      }
+    }
+    
     html += `
       <tr>
         <td>${d.nome}</td>
-        <td class="text-center">${(r?.media ?? "-")}</td>
-        <td class="text-center">${(r?.faltas ?? "-")}</td>
+        <td class="text-center ${mediaClass}">${media}</td>
+        <td class="text-center">${faltas}</td>
       </tr>
     `;
   });
 
-  if ((cacheDisciplinas || []).length === 0 && registros.length > 0) {
+	//Novo Modal das notas
+	if ((cacheDisciplinas || []).length === 0 && registros.length > 0) {
     registros.forEach(r => {
+      const media = r?.media ?? "-";
+      const faltas = r?.faltas ?? "-";
+      
+      // ⭐ NOVO: Determinar classe de destaque para a média
+      let mediaClass = "";
+      if (media !== "-") {
+        const notaNum = parseFloat(media);
+        if (!isNaN(notaNum)) {
+          if (notaNum < 5) {
+            mediaClass = "nota-baixa-cell";
+          } 
+        }
+      }
+      
       html += `
         <tr>
           <td>${r.disciplina_id}</td>
-          <td class="text-center">${(r?.media ?? "-")}</td>
-          <td class="text-center">${(r?.faltas ?? "-")}</td>
+          <td class="text-center ${mediaClass}">${media}</td>
+          <td class="text-center">${faltas}</td>
         </tr>
       `;
     });
   }
-
+  
   html += `
         </tbody>
       </table>
