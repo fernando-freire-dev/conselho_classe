@@ -362,3 +362,116 @@ async function onAbaAlunos() {
     await carregarTurmasAlunos();
   }
 }
+
+
+// Modal para mostrar disciplinas associadas a uma turma
+let modalDisciplinasInstance = null;
+let turmaIdAtiva = null;
+
+async function abrirModalDisciplinas(turmaId, turmaNome) {
+  turmaIdAtiva = turmaId;
+  document.getElementById("nomeTurmaModal").innerText = turmaNome;
+  
+  const modalEl = document.getElementById("modalDisciplinasTurma");
+  if (!modalDisciplinasInstance) {
+    modalDisciplinasInstance = new bootstrap.Modal(modalEl);
+  }
+
+  // Limpa e carrega os dados
+  await carregarSelectDisciplinas();
+  await listarDisciplinasDaTurma();
+  
+  modalDisciplinasInstance.show();
+}
+
+async function carregarSelectDisciplinas() {
+  const select = document.getElementById("selectNovaDisciplina");
+  const { data, error } = await supabaseClient
+    .from("disciplinas")
+    .select("id, nome")
+    .order("nome");
+
+  if (error) return;
+
+  select.innerHTML = '<option value="">Selecione...</option>';
+  data.forEach(d => {
+    select.innerHTML += `<option value="${d.id}">${d.nome}</option>`;
+  });
+}
+
+async function listarDisciplinasDaTurma() {
+  const corpo = document.getElementById("listaDisciplinasCorpo");
+  const badge = document.getElementById("totalDisciplinasBadge");
+  corpo.innerHTML = '<tr><td colspan="2" class="text-center text-muted py-3">Carregando...</td></tr>';
+
+  const { data, error } = await supabaseClient
+    .from("professor_disciplina_turma")
+    .select(`id, disciplina_id, disciplinas ( nome )`)
+    .eq("turma_id", turmaIdAtiva);
+
+  if (error) {
+    corpo.innerHTML = '<tr><td colspan="2" class="text-center text-danger">Erro ao carregar.</td></tr>';
+    return;
+  }
+
+  // Remove duplicatas de nomes de disciplinas para visualização limpa
+  const uniqueItems = [];
+  const map = new Map();
+  for (const item of data) {
+    if (!map.has(item.disciplina_id)) {
+      map.set(item.disciplina_id, true);
+      uniqueItems.push(item);
+    }
+  }
+
+  badge.innerText = uniqueItems.length;
+  corpo.innerHTML = "";
+
+  if (uniqueItems.length === 0) {
+    corpo.innerHTML = '<tr><td colspan="2" class="text-center text-muted py-3">Nenhuma disciplina vinculada.</td></tr>';
+    return;
+  }
+
+  uniqueItems.forEach(item => {
+    corpo.innerHTML += `
+      <tr>
+        <td class="align-middle fw-medium">${item.disciplinas?.nome || 'Sem nome'}</td>
+        <td class="text-end">
+          <button class="btn btn-sm text-danger" onclick="removerVinculoDisciplina('${item.id}')">
+            Excluir
+          </button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+async function vincularNovaDisciplina() {
+  const discId = document.getElementById("selectNovaDisciplina").value;
+  if (!discId) return alert("Selecione uma disciplina para adicionar.");
+
+  const { error } = await supabaseClient
+    .from("professor_disciplina_turma")
+    .insert([{ turma_id: turmaIdAtiva, disciplina_id: discId }]);
+
+  if (error) {
+    alert("Erro ao vincular: " + error.message);
+  } else {
+    listarDisciplinasDaTurma();
+  }
+}
+
+async function removerVinculoDisciplina(id) {
+  if (!confirm("Deseja remover o vínculo desta disciplina com a turma?")) return;
+
+  const { error } = await supabaseClient
+    .from("professor_disciplina_turma")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    alert("Erro ao remover: " + error.message);
+  } else {
+    listarDisciplinasDaTurma();
+  }
+}
