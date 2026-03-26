@@ -1080,7 +1080,7 @@ async function carregarMatrizVinculos() {
     // 2. Busca os vínculos da tabela correta: turma_disciplina
     // Puxando o nome da disciplina via JOIN
     const { data: vinculos, error: errV } = await supabaseClient
-      .from("turma_disciplina")
+      .from("turma_disciplinas")
       .select(`
         turma_id,
         disciplinas ( nome )
