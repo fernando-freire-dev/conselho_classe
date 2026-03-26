@@ -1056,11 +1056,11 @@ async function loadFiltroTurmasVinculo() {
   });
 }
 
-// Chamar no carregamento da página (no final do DOMContentLoaded existente)
+/*/ Chamar no carregamento da página (no final do DOMContentLoaded existente)
 document.addEventListener("DOMContentLoaded", () => {
   // ... outras funções ...
   carregarMatrizVinculos();
-});
+});*/
 
 document.addEventListener("click", function (e) {
   const input = document.getElementById("filtro_professor_vinculo");
@@ -1084,4 +1084,5 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadFiltroTurmasVinculo();
   await carregarProfessoresParaFiltro();
   await loadVinculosAcademicos();
+  await carregarMatrizVinculos();
 });
