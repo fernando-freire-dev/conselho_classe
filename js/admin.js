@@ -295,6 +295,10 @@ async function loadTurmas() {
     container.innerHTML += `
       <div class="d-flex justify-content-between align-items-center border p-2 mb-2">
         <span><strong>${turma.nome}</strong> - ${turma.ano}</span>
+        <button class="btn btn-sm btn-outline-primary me-1" 
+          onclick="abrirModalDisciplinas('${turma.id}', '${turma.nome}')">
+           Disciplinas
+        </button>
         <button class="btn btn-sm btn-danger"
           onclick="deleteTurma('${turma.id}')">
           Excluir
