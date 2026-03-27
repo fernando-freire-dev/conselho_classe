@@ -338,7 +338,7 @@ async function processarMapao(event) {
 		if (notasPreenchidas > 0) {
 		  alert(`Sucesso! ${notasPreenchidas} notas e faltas foram importadas do Mapão.`);
 		
-		  /*const contagem = contarNotasBaixas();
+		  const contagem = 0;
 		
 		  /*if (contagem.total > 0) {
 		    alert(
