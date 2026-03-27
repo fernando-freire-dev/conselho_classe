@@ -360,3 +360,18 @@ async function processarMapao(event) {
 
   reader.readAsArrayBuffer(file);
 }
+
+function aplicarDestaqueNota(input, valor) {
+  const nota = parseFloat(valor);
+
+  if (isNaN(nota)) {
+    input.classList.remove("nota-baixa");
+    return;
+  }
+
+  if (nota < 5) {
+    input.classList.add("nota-baixa");
+  } else {
+    input.classList.remove("nota-baixa");
+  }
+}
