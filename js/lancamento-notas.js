@@ -308,7 +308,7 @@ async function processarMapao(event) {
 		
 		          if (!isNaN(valorFloat)) {
 		            inputMedia.value = valorFloat;
-		            aplicarDestaqueNota(inputMedia, valorFloat);
+		            //aplicarDestaqueNota(inputMedia, valorFloat);
 		            notasPreenchidas++;
 		          }
 		        }
@@ -326,7 +326,7 @@ async function processarMapao(event) {
 		
 		            if (!isNaN(faltaFloat)) {
 		              inputFaltas.value = faltaFloat;
-		              aplicarDestaqueFalta(inputFaltas, faltaFloat);
+		              //aplicarDestaqueFalta(inputFaltas, faltaFloat);
 		            }
 		          }
 		        }
@@ -340,11 +340,11 @@ async function processarMapao(event) {
 		
 		  const contagem = contarNotasBaixas();
 		
-		  if (contagem.total > 0) {
+		  /*if (contagem.total > 0) {
 		    alert(
 		      `⚠️ Atenção: ${contagem.total} aluno(s) com nota abaixo de 5!`
 		    );
-		  }
+		  }*/
 		
 		} else {
 		  alert("Nenhuma nota foi preenchida. Verifique se os nomes dos alunos correspondem.");
