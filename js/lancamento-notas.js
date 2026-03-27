@@ -6,6 +6,7 @@ function voltarDashboard() {
 }
 
 function carregarInfo() {
+
   turmaId = localStorage.getItem("turma_id");
   disciplinaId = localStorage.getItem("disciplina_id");
   const turmaNome = localStorage.getItem("turma_nome");
@@ -22,6 +23,7 @@ function carregarInfo() {
 }
 
 async function carregarAlunos() {
+
   const bimestre = document.getElementById("bimestreSelect").value;
 
   const { data: alunos, error } = await supabaseClient
@@ -62,6 +64,7 @@ async function carregarAlunos() {
   const corpo = document.getElementById("corpoTabela");
 
   alunos.forEach(aluno => {
+
     const notaExistente = notas?.find(n => n.aluno_id === aluno.id);
 
     corpo.innerHTML += `
@@ -83,15 +86,22 @@ async function carregarAlunos() {
       </tr>
     `;
   });
+  
+  // ⭐ NOVO: Aplicar destaque nas notas após carregar
+  setTimeout(() => {
+    destacarTodasNotas();
+  }, 100);
 }
 
 async function salvarNotas() {
+
   const bimestre = document.getElementById("bimestreSelect").value;
 
   const inputsMedia = document.querySelectorAll(".media");
   const inputsFaltas = document.querySelectorAll(".faltas");
 
   for (let i = 0; i < inputsMedia.length; i++) {
+
     const aluno_id = inputsMedia[i].dataset.aluno;
     const media = inputsMedia[i].value || null;
     const faltas = inputsFaltas[i].value || null;
