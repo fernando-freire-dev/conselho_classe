@@ -87,11 +87,11 @@ async function carregarAlunos() {
     `;
   });
   
-  // ⭐ NOVO: Aplicar destaque nas notas após carregar
+  /*// ⭐ NOVO: Aplicar destaque nas notas após carregar
   setTimeout(() => {
     destacarTodasNotas();
   }, 100);
-}
+}*/
 
 async function salvarNotas() {
 
@@ -338,7 +338,7 @@ async function processarMapao(event) {
 		if (notasPreenchidas > 0) {
 		  alert(`Sucesso! ${notasPreenchidas} notas e faltas foram importadas do Mapão.`);
 		
-		  const contagem = contarNotasBaixas();
+		  /*const contagem = contarNotasBaixas();
 		
 		  /*if (contagem.total > 0) {
 		    alert(
