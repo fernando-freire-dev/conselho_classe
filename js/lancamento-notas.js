@@ -143,13 +143,14 @@ async function processarMapao(event) {
     return;
   }
 
+  // Busca as disciplinas da turma no banco ANTES de abrir o arquivo
+  // (precisa ser aqui pois o reader.onload não é async)
   let disciplinasBanco = [];
   try {
     const { data: discData } = await supabaseClient
       .from("turma_disciplinas")
       .select("disciplinas(id, nome)")
       .eq("turma_id", turmaId);
-
     disciplinasBanco = (discData || [])
       .filter(d => d.disciplinas)
       .map(d => d.disciplinas.nome);
@@ -157,6 +158,7 @@ async function processarMapao(event) {
     console.warn("Não foi possível buscar disciplinas do banco:", e);
   }
 
+  // Função de matching: compara por igualdade ou prefixo (para nomes truncados)
   function matchDisciplina(nomeMapao, nomeBanco) {
     const nm = normalizarTexto(nomeMapao);
     const nb = normalizarTexto(nomeBanco);
@@ -174,7 +176,9 @@ async function processarMapao(event) {
       const sheet = workbook.Sheets[firstSheetName];
       const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
+      // 1. Encontrar a linha de cabeçalho (procurar "ALUNO" na primeira coluna)
       let headerRowIndex = -1;
+      const alunoColIndex = 0;
 
       for (let i = 0; i < json.length; i++) {
         if (compararTextos(json[i][0], "ALUNO")) {
@@ -184,76 +188,157 @@ async function processarMapao(event) {
       }
 
       if (headerRowIndex === -1) {
-        alert("Não foi possível encontrar 'ALUNO'.");
+        alert("Não foi possível encontrar a célula 'ALUNO' na primeira coluna do arquivo.");
         return;
+      }
+
+      // 2. Encontrar a coluna da disciplina usando matching por prefixo
+      // O mapão trunca nomes longos (ex: "LÓGICA E LINGUAGEM DE PROGRAMA" em vez do nome completo)
+      // disciplinasBanco foi carregado antes do reader.onload para evitar await dentro do callback
+
+      // Tenta encontrar qual disciplina do banco corresponde à disciplina atual
+      // Primeiro tenta exato, depois por prefixo
+      let disciplinaAlvo = disciplinaNome;
+      if (disciplinasBanco.length > 0) {
+        const match = disciplinasBanco.find(d => matchDisciplina(disciplinaNome, d) || matchDisciplina(d, disciplinaNome));
+        if (match) disciplinaAlvo = match;
       }
 
       const headerRow = json[headerRowIndex];
       let discColIndex = -1;
 
+      // O XLSX.js expande células mescladas repetindo o valor em todas as colunas do merge.
+      // Isso pode causar falsos positivos se encontrarmos a disciplina errada primeiro.
+      // Estratégia: varrer apenas células únicas (pular duplicatas consecutivas)
+      // e escolher o match com maior sobreposição de texto (melhor match).
+      let melhorMatchTamanho = 0;
+      let ultimaCelula = null;
+
       for (let j = 0; j < headerRow.length; j++) {
         const cellValor = String(headerRow[j] ?? "").split("\n")[0].trim();
-        if (cellValor && matchDisciplina(cellValor, disciplinaNome)) {
+
+        // Pular células duplicadas do merge (mesmo valor que a anterior)
+        if (cellValor === ultimaCelula) continue;
+        ultimaCelula = cellValor;
+
+        if (!cellValor) continue;
+
+        const nm = normalizarTexto(cellValor);
+        const nd = normalizarTexto(disciplinaAlvo);
+
+        // Calcula o tamanho do prefixo comum
+        const prefixoComum = Math.min(nm.length, nd.length);
+        const faz_match = nd.startsWith(nm) || nm.startsWith(nd);
+
+        if (faz_match && prefixoComum > melhorMatchTamanho) {
+          melhorMatchTamanho = prefixoComum;
           discColIndex = j;
-          break;
         }
       }
 
       if (discColIndex === -1) {
-        alert(`Disciplina "${disciplinaNome}" não encontrada.`);
+        alert(`Disciplina "${disciplinaNome}" não encontrada na linha de cabeçalho do arquivo.`);
         return;
       }
 
+      // 3. Identificar o range da célula mesclada da disciplina
+      let endColIndex = discColIndex;
+      if (sheet['!merges']) {
+        const merge = sheet['!merges'].find(m => m.s.r === headerRowIndex && m.s.c === discColIndex);
+        if (merge) endColIndex = merge.e.c;
+      }
+
+      // 4. Encontrar as colunas "M" (Média) e "F" (Faltas) na linha abaixo
       const subHeaderRow = json[headerRowIndex + 1];
       let mediaColIndex = -1;
       let faltasColIndex = -1;
 
       if (subHeaderRow) {
-        for (let c = discColIndex; c < subHeaderRow.length; c++) {
-          if (compararTextos(subHeaderRow[c], "M")) {
+        for (let c = discColIndex; c <= endColIndex; c++) {
+          if (compararTextos(subHeaderRow[c], "M") && mediaColIndex === -1) {
             mediaColIndex = c;
-          } else if (compararTextos(subHeaderRow[c], "F")) {
+          } else if (compararTextos(subHeaderRow[c], "F") && mediaColIndex !== -1 && faltasColIndex === -1) {
+            // A coluna F vem logo após a M dentro do bloco da disciplina
             faltasColIndex = c;
           }
         }
-      }
 
-      let notasPreenchidas = 0;
-
-      const rowsHtml = document.querySelectorAll("#corpoTabela tr");
-
-      for (let r = headerRowIndex + 2; r < json.length; r++) {
-        const rowData = json[r];
-        const nomeExcel = rowData[0];
-
-        if (nomeExcel && typeof nomeExcel === "string") {
-          rowsHtml.forEach(tr => {
-            const nomeHtml = tr.querySelector(".col-aluno")?.innerText;
-            const inputMedia = tr.querySelector(".media");
-            const inputFaltas = tr.querySelector(".faltas");
-
-            if (nomeHtml && inputMedia && compararTextos(nomeHtml, nomeExcel)) {
-
-              const notaExcel = rowData[mediaColIndex];
-              if (notaExcel !== undefined && notaExcel !== "") {
-                inputMedia.value = parseFloat(String(notaExcel).replace(",", "."));
-                notasPreenchidas++;
-              }
-
-              const faltaExcel = rowData[faltasColIndex];
-              if (faltaExcel !== undefined && faltaExcel !== "") {
-                inputFaltas.value = parseFloat(String(faltaExcel).replace(",", "."));
-              }
-            }
-          });
+        // Fallback: se não achou "F" no range, tenta a coluna imediatamente após a média
+        if (mediaColIndex !== -1 && faltasColIndex === -1) {
+          faltasColIndex = mediaColIndex + 1;
         }
       }
 
-      if (notasPreenchidas > 0) {
-        alert(`Sucesso! ${notasPreenchidas} notas foram importadas.`);
-      } else {
-        alert("Nenhuma nota foi encontrada.");
+      if (mediaColIndex === -1) {
+        alert("Coluna 'M' (Média) não encontrada abaixo da disciplina.");
+        return;
       }
+
+      // 5. Preencher os inputs com as notas e faltas encontradas
+		let notasPreenchidas = 0;
+		const rowsHtml = document.querySelectorAll("#corpoTabela tr");
+		
+		for (let r = headerRowIndex + 2; r < json.length; r++) {
+		  const rowData = json[r];
+		  const nomeExcel = rowData[alunoColIndex];
+		
+		  if (nomeExcel && typeof nomeExcel === "string") {
+		    rowsHtml.forEach(tr => {
+		      const nomeHtml = tr.querySelector(".col-aluno")?.innerText;
+		      const inputMedia = tr.querySelector(".media");
+		      const inputFaltas = tr.querySelector(".faltas");
+		
+		      if (nomeHtml && inputMedia && compararTextos(nomeHtml, nomeExcel)) {
+		
+		        // Média
+		        const notaExcel = rowData[mediaColIndex];
+		        if (notaExcel !== undefined && notaExcel !== null && notaExcel !== "") {
+		          const notaFormatada = String(notaExcel).replace(",", ".");
+		          const valorFloat = parseFloat(notaFormatada);
+		
+		          if (!isNaN(valorFloat)) {
+		            inputMedia.value = valorFloat;
+		            aplicarDestaqueNota(inputMedia, valorFloat);
+		            notasPreenchidas++;
+		          }
+		        }
+		
+		        // Faltas
+		        if (inputFaltas && faltasColIndex !== -1) {
+		          const faltaExcel = rowData[faltasColIndex];
+		          const faltaStr = String(faltaExcel ?? "").trim();
+		
+		          if (faltaStr === "-" || faltaStr === "") {
+		            inputFaltas.value = 0;
+		          } else {
+		            const faltaFormatada = faltaStr.replace(",", ".");
+		            const faltaFloat = parseFloat(faltaFormatada);
+		
+		            if (!isNaN(faltaFloat)) {
+		              inputFaltas.value = faltaFloat;
+		              aplicarDestaqueFalta(inputFaltas, faltaFloat);
+		            }
+		          }
+		        }
+		      }
+		    });
+		  }
+		}
+		
+		if (notasPreenchidas > 0) {
+		  alert(`Sucesso! ${notasPreenchidas} notas e faltas foram importadas do Mapão.`);
+		
+		  const contagem = contarNotasBaixas();
+		
+		  if (contagem.total > 0) {
+		    alert(
+		      `⚠️ Atenção: ${contagem.total} aluno(s) com nota abaixo de 5!`
+		    );
+		  }
+		
+		} else {
+		  alert("Nenhuma nota foi preenchida. Verifique se os nomes dos alunos correspondem.");
+		}
 
     } catch (err) {
       console.error(err);
