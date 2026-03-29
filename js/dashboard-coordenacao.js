@@ -203,7 +203,7 @@ async function baixarRelatorio(conselhoId) {
 
   const { data: conselho, error: errConselho } = await supabaseClient
     .from("conselhos")
-    .select("id, bimestre, turma_id, observacoes_gerais, data_conselho, turmas(nome)")
+    .select("id, bimestre, turma_id, observacoes_gerais, data_conselho, turmas(nome, ano)")
     .eq("id", conselhoId)
     .single();
 
@@ -224,10 +224,10 @@ async function baixarRelatorio(conselhoId) {
       indisciplina,
       nivel_proficiencia,
       concluido,
-      alunos ( nome )
+      alunos ( nome, numero_chamada )
     `)
     .eq("conselho_id", conselhoId)
-    .order("nome", { foreignTable: "alunos", ascending: true });
+    .order("numero_chamada", { foreignTable: "alunos", ascending: true });
 
   if (errRegistros) {
     console.error("Erro conselho_alunos:", errRegistros);
